@@ -1,0 +1,910 @@
+<!doctype html>
+<html lang="es">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>Brújula Sonora</title>
+<meta name="description" content="Escucha el campo magnético de la Tierra y de los imanes con la brújula de tu celular.">
+<meta name="theme-color" content="#000000">
+<link rel="manifest" href="manifest.webmanifest">
+<link rel="icon" href="icons/icon-192.png" type="image/png">
+<link rel="apple-touch-icon" href="icons/apple-touch-icon.png">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-title" content="Brújula Sonora">
+<meta name="apple-mobile-web-app-status-bar-style" content="black">
+<style>
+  :root {
+    --fondo: #000;
+    --texto: #fff;
+    --acento: #ffd600;
+    --boton: #ffd600;
+    --boton-texto: #000;
+    --borde: #fff;
+    --alerta: #ff6b6b;
+  }
+  * { box-sizing: border-box; }
+  html { font-size: 20px; }
+  body {
+    margin: 0;
+    background: var(--fondo);
+    color: var(--texto);
+    font-family: system-ui, -apple-system, "Segoe UI", Roboto, Arial, sans-serif;
+    line-height: 1.45;
+    padding: 0 16px calc(24px + env(safe-area-inset-bottom));
+  }
+  header {
+    padding-top: calc(12px + env(safe-area-inset-top));
+    border-bottom: 3px solid var(--acento);
+    padding-bottom: 12px;
+    margin-bottom: 16px;
+  }
+  h1 { font-size: 1.8rem; margin: 0 0 12px; color: var(--acento); }
+  h2 { font-size: 1.6rem; margin: 8px 0 12px; color: var(--acento); }
+  h3 { font-size: 1.25rem; margin: 20px 0 8px; }
+  p, li { font-size: 1.1rem; }
+  h2:focus, h1:focus { outline: 4px dashed var(--acento); outline-offset: 4px; }
+  main { max-width: 640px; margin: 0 auto; }
+  header > div { max-width: 640px; margin: 0 auto; }
+
+  button {
+    display: block;
+    width: 100%;
+    min-height: 72px;
+    margin: 12px 0;
+    padding: 14px 16px;
+    font: inherit;
+    font-size: 1.3rem;
+    font-weight: 700;
+    color: var(--boton-texto);
+    background: var(--boton);
+    border: 3px solid var(--borde);
+    border-radius: 14px;
+    cursor: pointer;
+    touch-action: manipulation;
+  }
+  button:focus-visible { outline: 5px solid #00e5ff; outline-offset: 3px; }
+  button:active { transform: scale(0.98); }
+  button.secundario { background: #1a1a1a; color: var(--texto); }
+  button.grande { min-height: 110px; font-size: 1.6rem; }
+  .fila { display: flex; gap: 12px; }
+  .fila > button { flex: 1; }
+  [role="switch"][aria-checked="false"] { background: #1a1a1a; color: var(--texto); }
+
+  .lectura {
+    border: 3px solid var(--borde);
+    border-radius: 14px;
+    padding: 12px 16px;
+    margin: 12px 0;
+    text-align: center;
+  }
+  .lectura .valor { font-size: 2.6rem; font-weight: 800; color: var(--acento); display: block; }
+  .lectura .detalle { font-size: 1.2rem; display: block; }
+  #mensaje {
+    border-left: 6px solid var(--acento);
+    padding: 8px 12px;
+    background: #111;
+    font-size: 1.1rem;
+    min-height: 2.5em;
+    margin: 0;
+  }
+  .aviso { border: 3px solid var(--alerta); border-radius: 14px; padding: 8px 14px; }
+  .explicacion { background: #111; border-radius: 12px; padding: 4px 16px; margin-bottom: 8px; }
+  .solo-lector {
+    position: absolute !important;
+    width: 1px; height: 1px;
+    padding: 0; margin: -1px;
+    overflow: hidden; clip: rect(0 0 0 0);
+    white-space: nowrap; border: 0;
+  }
+  [hidden] { display: none !important; }
+  @media (prefers-reduced-motion: reduce) { button:active { transform: none; } }
+</style>
+</head>
+<body>
+<header>
+  <div>
+    <h1 id="titulo-app" tabindex="-1">Brújula Sonora</h1>
+    <button id="btn-voz" role="switch" aria-checked="true" type="button">Voz de la app: sí</button>
+    <p id="mensaje"><span class="solo-lector">Último mensaje: </span><span id="mensaje-texto">Bienvenida.</span></p>
+  </div>
+</header>
+
+<!-- Regiones para el lector de pantalla (se usan cuando la voz de la app está apagada) -->
+<div id="vivo-cortes" class="solo-lector" aria-live="polite" aria-atomic="true"></div>
+<div id="vivo-urgente" class="solo-lector" aria-live="assertive" aria-atomic="true"></div>
+
+<main>
+  <!-- ============ INICIO ============ -->
+  <section id="pantalla-inicio" aria-labelledby="h-inicio">
+    <h2 id="h-inicio" tabindex="-1">Inicio</h2>
+    <p>Hola. Con esta app vas a escuchar el campo magnético de la Tierra y de los imanes.</p>
+    <p>Primero toca <strong>Empezar</strong>. Así se activan el sonido y la brújula.</p>
+    <button id="btn-empezar" class="grande" type="button">Empezar</button>
+    <h3 id="h-modos">Elige un modo</h3>
+    <div role="group" aria-labelledby="h-modos">
+      <button type="button" data-ir="brujula">Modo Brújula</button>
+      <button type="button" data-ir="detector">Modo Detector de imanes</button>
+      <button type="button" data-ir="aprender">Modo Aprender</button>
+      <button type="button" data-ir="ayuda" class="secundario">Ayuda y cuidados</button>
+    </div>
+  </section>
+
+  <!-- ============ BRÚJULA ============ -->
+  <section id="pantalla-brujula" aria-labelledby="h-brujula" hidden>
+    <h2 id="h-brujula" tabindex="-1">Modo Brújula</h2>
+    <p>Sostén el celular de pie, frente a ti. Gira despacio. El tono sube cuando te acercas al norte. En el norte suena una campanita.</p>
+    <button id="btn-donde" class="grande" type="button">¿Hacia dónde miro?</button>
+    <div class="lectura" aria-hidden="true">
+      <span class="valor" id="b-direccion">—</span>
+      <span class="detalle" id="b-grados">Sin lectura todavía</span>
+    </div>
+    <div class="fila">
+      <button type="button" class="secundario btn-vol-menos">Bajar volumen</button>
+      <button type="button" class="secundario btn-vol-mas">Subir volumen</button>
+    </div>
+    <button type="button" class="btn-pausa secundario">Pausar sonido</button>
+    <button type="button" class="secundario" data-ir="inicio">Volver al inicio</button>
+  </section>
+
+  <!-- ============ DETECTOR ============ -->
+  <section id="pantalla-detector" aria-labelledby="h-detector" hidden>
+    <h2 id="h-detector" tabindex="-1">Modo Detector de imanes</h2>
+    <p>Pon el celular quieto sobre la mesa y toca Calibrar.</p>
+    <p class="aviso"><strong>Importante:</strong> el celular se queda quieto. Lo que se mueve es el imán. Acércalo despacio.</p>
+    <button id="btn-calibrar" class="grande" type="button">Calibrar</button>
+    <button id="btn-cuanto" type="button">¿Cuánto se desvía?</button>
+    <div class="lectura" aria-hidden="true">
+      <span class="valor" id="d-desvio">—</span>
+      <span class="detalle" id="d-estado">Sin calibrar</span>
+      <span class="detalle" id="d-campo"></span>
+    </div>
+    <div class="fila">
+      <button type="button" class="secundario btn-vol-menos">Bajar volumen</button>
+      <button type="button" class="secundario btn-vol-mas">Subir volumen</button>
+    </div>
+    <button type="button" class="btn-pausa secundario">Pausar sonido</button>
+    <button type="button" class="secundario" data-ir="inicio">Volver al inicio</button>
+  </section>
+
+  <!-- ============ APRENDER ============ -->
+  <section id="pantalla-aprender" aria-labelledby="h-aprender" hidden>
+    <h2 id="h-aprender" tabindex="-1">Modo Aprender</h2>
+    <p>Toca una pregunta. La app te lee la respuesta. El texto aparece debajo del botón.</p>
+    <div id="lista-temas"></div>
+    <button id="btn-callar" type="button" class="secundario">Detener lectura</button>
+    <button type="button" class="secundario" data-ir="inicio">Volver al inicio</button>
+  </section>
+
+  <!-- ============ AYUDA ============ -->
+  <section id="pantalla-ayuda" aria-labelledby="h-ayuda" hidden>
+    <h2 id="h-ayuda" tabindex="-1">Ayuda y cuidados</h2>
+    <button id="btn-leer-ayuda" type="button">Escuchar esta ayuda</button>
+    <div id="texto-ayuda">
+      <h3>Si la brújula marca mal</h3>
+      <p>La brújula del celular a veces se confunde. Puedes recalibrarla así:</p>
+      <ol>
+        <li>Aléjate de imanes, parlantes y objetos de metal.</li>
+        <li>Sostén el celular con la mano.</li>
+        <li>Muévelo en el aire dibujando un número ocho acostado, unas tres veces.</li>
+        <li>Gira también la muñeca mientras lo mueves.</li>
+      </ol>
+      <h3>Cuida tu celular</h3>
+      <ul>
+        <li>No dejes imanes pegados al celular por mucho tiempo. Pueden dañar la brújula.</li>
+        <li>Mantén los imanes lejos de tarjetas bancarias. Las pueden borrar.</li>
+        <li>Acerca el imán despacio. No lo golpees contra el celular.</li>
+      </ul>
+      <h3>Si no escuchas nada</h3>
+      <ul>
+        <li>Sube el volumen del celular.</li>
+        <li>En iPhone, revisa que el interruptor de silencio esté apagado.</li>
+        <li>Toca Empezar otra vez.</li>
+      </ul>
+      <h3>Si dos voces hablan a la vez</h3>
+      <p>Si usas TalkBack o VoiceOver, puedes apagar la voz de la app. El botón está arriba: Voz de la app. Así tu lector de pantalla dirá los mensajes.</p>
+    </div>
+    <button type="button" class="secundario" data-ir="inicio">Volver al inicio</button>
+  </section>
+</main>
+
+<script>
+"use strict";
+
+/* =========================================================
+   1. TEXTOS
+   ========================================================= */
+const TEMAS = [
+  {
+    id: "tierra",
+    pregunta: "¿Por qué la Tierra es un imán?",
+    texto: [
+      "El centro de la Tierra tiene hierro y níquel.",
+      "Una parte de ese metal está derretida y se mueve sin parar.",
+      "Ese movimiento crea corrientes eléctricas.",
+      "Las corrientes eléctricas producen un campo magnético.",
+      "Por eso la Tierra se comporta como un imán gigante.",
+      "Ese campo nos protege de partículas que vienen del Sol."
+    ]
+  },
+  {
+    id: "brujula",
+    pregunta: "¿Cómo funciona una brújula?",
+    texto: [
+      "Una brújula tiene una aguja que es un imán pequeño.",
+      "La aguja gira libre y se alinea con el campo magnético de la Tierra.",
+      "Así, una punta siempre señala hacia el norte.",
+      "Tu celular no tiene aguja.",
+      "Tiene un sensor llamado magnetómetro, que mide el campo magnético.",
+      "Esta app convierte esa medida en sonido."
+    ]
+  },
+  {
+    id: "confunde",
+    pregunta: "¿Por qué mi imán confunde a la brújula?",
+    texto: [
+      "El campo de la Tierra es débil.",
+      "Tu imán está muy cerca, y cerca su campo es mucho más fuerte.",
+      "Entonces la brújula sigue al imán y no a la Tierra.",
+      "Entre más cerca está el imán, más se desvía la lectura.",
+      "Si lo alejas, la brújula vuelve a señalar el norte.",
+      "Eso es lo que escuchas en el detector de imanes."
+    ]
+  },
+  {
+    id: "polos",
+    pregunta: "¿Qué son los polos de un imán?",
+    texto: [
+      "Todo imán tiene dos polos: norte y sur.",
+      "Polos iguales se repelen, se empujan.",
+      "Polos distintos se atraen, se juntan.",
+      "Si partes un imán, cada pedazo tiene otra vez dos polos.",
+      "El polo norte de una brújula apunta al norte geográfico.",
+      "Eso pasa porque allá queda un polo sur magnético de la Tierra."
+    ]
+  }
+];
+
+const PUNTOS = ["norte", "nororiente", "oriente", "suroriente", "sur", "suroccidente", "occidente", "noroccidente"];
+
+/* =========================================================
+   2. ESTADO
+   ========================================================= */
+const estado = {
+  empezado: false,
+  pantalla: "inicio",
+  vozApp: true,
+  volumen: 3,          // de 1 a 5
+  pausado: false,
+  // brújula
+  fuente: null,        // "ios", "absoluta", "relativa-absoluta"
+  rumbo: null,         // suavizado (0-360)
+  rumboCrudo: null,
+  inclinacion: null,   // {beta, gamma}
+  ultimaLectura: 0,
+  enNorte: false,
+  // magnetómetro
+  magnetometro: null,
+  campo: null,         // µT (suavizado)
+  // detector
+  referencia: null,    // {rumbo, campo, beta, gamma}
+  calibrando: false,
+  nivelDetector: 0,    // 0 nada, 1 imán, 2 fuerte
+  desvio: 0
+};
+
+try {
+  const v = localStorage.getItem("bs-voz");
+  if (v !== null) estado.vozApp = v === "si";
+  const vol = parseInt(localStorage.getItem("bs-volumen"), 10);
+  if (vol >= 1 && vol <= 5) estado.volumen = vol;
+} catch (e) { /* sin almacenamiento: usamos valores por defecto */ }
+
+const $ = (sel) => document.querySelector(sel);
+const $$ = (sel) => Array.from(document.querySelectorAll(sel));
+
+/* =========================================================
+   3. VOZ Y ANUNCIOS
+   ========================================================= */
+const PREFERENCIA_VOZ = ["es-co", "es-419", "es-mx", "es-us"];
+let vozElegida = null;
+
+function elegirVoz() {
+  if (!("speechSynthesis" in window)) return;
+  const voces = speechSynthesis.getVoices();
+  if (!voces.length) return;
+  const norm = (l) => (l || "").toLowerCase().replace("_", "-");
+  for (const pref of PREFERENCIA_VOZ) {
+    const v = voces.find((x) => norm(x.lang) === pref);
+    if (v) { vozElegida = v; return; }
+  }
+  vozElegida = voces.find((x) => norm(x.lang).startsWith("es")) || null;
+}
+if ("speechSynthesis" in window) {
+  elegirVoz();
+  speechSynthesis.addEventListener?.("voiceschanged", elegirVoz);
+}
+
+let finDeVozTimer = null;
+
+function hablar(texto, interrumpir = true) {
+  if (!("speechSynthesis" in window)) return false;
+  if (interrumpir) speechSynthesis.cancel();
+  const u = new SpeechSynthesisUtterance(texto);
+  if (!vozElegida) elegirVoz();
+  if (vozElegida) { u.voice = vozElegida; u.lang = vozElegida.lang; } else { u.lang = "es-CO"; }
+  u.rate = 0.95;
+  u.onstart = () => bajarTono(true);
+  u.onend = u.onerror = () => {
+    clearTimeout(finDeVozTimer);
+    finDeVozTimer = setTimeout(() => { if (!speechSynthesis.speaking) bajarTono(false); }, 150);
+  };
+  // Algunos navegadores no avisan onstart: bajamos el tono de una vez.
+  bajarTono(true);
+  speechSynthesis.speak(u);
+  return true;
+}
+
+function callar() {
+  if ("speechSynthesis" in window) speechSynthesis.cancel();
+  bajarTono(false);
+}
+
+/**
+ * Anuncia un mensaje: lo muestra en pantalla y lo dice
+ * con la voz de la app o con el lector de pantalla.
+ * urgente = usa aria-live="assertive".
+ */
+function anunciar(texto, { urgente = false, interrumpir = true } = {}) {
+  $("#mensaje-texto").textContent = texto;
+  if (estado.vozApp && hablar(texto, interrumpir)) return;
+  const region = urgente ? $("#vivo-urgente") : $("#vivo-cortes");
+  region.textContent = "";
+  // Pequeña pausa para que el lector note el cambio aunque el texto se repita.
+  setTimeout(() => { region.textContent = texto; }, 60);
+  // El lector de pantalla no avisa cuándo termina: bajamos el tono un momento.
+  bajarTono(true);
+  clearTimeout(finDeVozTimer);
+  finDeVozTimer = setTimeout(() => bajarTono(false), Math.min(6000, 700 + texto.length * 60));
+}
+
+function vibrar(patron) {
+  try { if (navigator.vibrate) navigator.vibrate(patron); } catch (e) {}
+}
+
+/* =========================================================
+   4. AUDIO
+   ========================================================= */
+let ctx = null, maestro = null, atenuador = null, tonoOsc = null, tonoGain = null, ruido = null;
+const VOLUMENES = [0, 0.15, 0.3, 0.5, 0.75, 1];
+
+function iniciarAudio() {
+  if (ctx) { if (ctx.state !== "running") ctx.resume(); return; }
+  const AC = window.AudioContext || window.webkitAudioContext;
+  if (!AC) return;
+  // En iPhone, esto deja sonar el audio aunque el interruptor de silencio esté activo.
+  try { if (navigator.audioSession) navigator.audioSession.type = "playback"; } catch (e) {}
+  ctx = new AC();
+  maestro = ctx.createGain();
+  maestro.gain.value = VOLUMENES[estado.volumen];
+  atenuador = ctx.createGain();
+  atenuador.gain.value = 1;
+  atenuador.connect(maestro);
+  maestro.connect(ctx.destination);
+
+  // Tono continuo de la brújula
+  tonoOsc = ctx.createOscillator();
+  tonoOsc.type = "sine";
+  tonoOsc.frequency.value = 220;
+  tonoGain = ctx.createGain();
+  tonoGain.gain.value = 0;
+  tonoOsc.connect(tonoGain).connect(atenuador);
+  tonoOsc.start();
+
+  // Ruido corto para los clics del detector
+  const largo = Math.floor(ctx.sampleRate * 0.03);
+  ruido = ctx.createBuffer(1, largo, ctx.sampleRate);
+  const datos = ruido.getChannelData(0);
+  for (let i = 0; i < largo; i++) datos[i] = (Math.random() * 2 - 1) * Math.pow(1 - i / largo, 3);
+
+  // Sonido mínimo para desbloquear el audio en iPhone
+  const o = ctx.createOscillator(), g = ctx.createGain();
+  g.gain.value = 0.0001;
+  o.connect(g).connect(ctx.destination);
+  o.start(); o.stop(ctx.currentTime + 0.05);
+  ctx.resume();
+}
+
+function bajarTono(hablando) {
+  if (!ctx) return;
+  atenuador.gain.setTargetAtTime(hablando ? 0.2 : 1, ctx.currentTime, 0.08);
+}
+
+function aplicarVolumen() {
+  if (maestro) maestro.gain.setTargetAtTime(VOLUMENES[estado.volumen], ctx.currentTime, 0.05);
+}
+
+function campanita() {
+  if (!ctx || estado.pausado) return;
+  const t = ctx.currentTime;
+  [[1318.5, 0.35], [2637, 0.12], [3951, 0.06]].forEach(([f, a]) => {
+    const o = ctx.createOscillator(), g = ctx.createGain();
+    o.type = "sine"; o.frequency.value = f;
+    g.gain.setValueAtTime(0.0001, t);
+    g.gain.exponentialRampToValueAtTime(a, t + 0.01);
+    g.gain.exponentialRampToValueAtTime(0.0001, t + 1.4);
+    o.connect(g).connect(maestro);   // la campanita no se atenúa
+    o.start(t); o.stop(t + 1.5);
+  });
+}
+
+function clic(nivel) {
+  if (!ctx) return;
+  const t = ctx.currentTime;
+  const fuente = ctx.createBufferSource();
+  fuente.buffer = ruido;
+  const filtro = ctx.createBiquadFilter();
+  filtro.type = "bandpass";
+  filtro.frequency.value = 1200 + nivel * 4500;   // más agudo con más desvío
+  filtro.Q.value = 2.5;
+  const g = ctx.createGain();
+  g.gain.value = 1.2;
+  fuente.connect(filtro).connect(g).connect(atenuador);
+  fuente.start(t);
+}
+
+/* Tono de la brújula: se actualiza con cada lectura */
+function actualizarTono() {
+  if (!ctx || !tonoGain) return;
+  const t = ctx.currentTime;
+  const activo = estado.pantalla === "brujula" && !estado.pausado && estado.rumbo !== null;
+  if (!activo) { tonoGain.gain.setTargetAtTime(0, t, 0.08); return; }
+  const lejos = distanciaAngular(estado.rumbo, 0);          // 0 a 180
+  const cerca = 1 - lejos / 180;                               // 1 = norte
+  const freq = 220 * Math.pow(4, cerca * cerca);               // 220 Hz a 880 Hz
+  tonoOsc.frequency.setTargetAtTime(freq, t, 0.06);
+  tonoGain.gain.setTargetAtTime(0.18, t, 0.15);
+}
+
+/* Contador Geiger del detector */
+let geigerTimer = null;
+function cicloGeiger() {
+  clearTimeout(geigerTimer);
+  if (estado.pantalla !== "detector" || !estado.referencia) return;
+  const nivel = Math.min(1, estado.desvio / 90);
+  if (!estado.pausado && ctx) clic(nivel);
+  // Clics por segundo: lento en calma, muy rápido con imán fuerte
+  const porSegundo = 0.8 + Math.pow(nivel, 1.4) * 28;
+  // Intervalos al azar, como un contador Geiger real
+  const espera = -Math.log(1 - Math.random() * 0.95) / porSegundo * 1000;
+  geigerTimer = setTimeout(cicloGeiger, Math.max(25, Math.min(espera, 2500)));
+}
+
+/* =========================================================
+   5. SENSORES
+   ========================================================= */
+function normalizar(a) { return ((a % 360) + 360) % 360; }
+function diferencia(a, b) { return ((a - b + 540) % 360) - 180; }   // de -180 a 180
+function distanciaAngular(a, b) { return Math.abs(diferencia(a, b)); }
+
+/* Rumbo con inclinación: sirve con el celular plano (hacia dónde apunta la parte de arriba)
+   o de pie frente a ti (hacia dónde apunta la parte de atrás). */
+function rumboDesdeEuler(alpha, beta, gamma) {
+  const r = Math.PI / 180;
+  const cA = Math.cos(alpha * r), sA = Math.sin(alpha * r);
+  const cB = Math.cos(beta * r), sB = Math.sin(beta * r);
+  const cG = Math.cos(gamma * r), sG = Math.sin(gamma * r);
+  // Dirección de la parte de atrás del celular (eje -z)
+  const zx = -cA * sG - sA * sB * cG;
+  const zy = -sA * sG + cA * sB * cG;
+  // Dirección de la parte de arriba del celular (eje y)
+  const yx = -sA * cB;
+  const yy = cA * cB;
+  const usarAtras = Math.hypot(zx, zy) > Math.hypot(yx, yy);
+  const x = usarAtras ? zx : yx, y = usarAtras ? zy : yy;
+  return normalizar(Math.atan2(x, y) / r);
+}
+
+function nuevaLectura(rumbo, beta, gamma) {
+  if (rumbo === null || isNaN(rumbo)) return;
+  estado.rumboCrudo = rumbo;
+  estado.inclinacion = { beta: beta || 0, gamma: gamma || 0 };
+  // Filtro suave que respeta el salto entre 359° y 0°
+  if (estado.rumbo === null) estado.rumbo = rumbo;
+  else estado.rumbo = normalizar(estado.rumbo + 0.2 * diferencia(rumbo, estado.rumbo));
+  estado.ultimaLectura = performance.now();
+}
+
+function alOrientarIOS(e) {
+  if (typeof e.webkitCompassHeading === "number" && !isNaN(e.webkitCompassHeading)) {
+    estado.fuente = "ios";
+    nuevaLectura(normalizar(e.webkitCompassHeading), e.beta, e.gamma);
+  }
+}
+function alOrientarAbsoluta(e) {
+  if (e.alpha === null) return;
+  estado.fuente = "absoluta";
+  nuevaLectura(rumboDesdeEuler(e.alpha, e.beta || 0, e.gamma || 0), e.beta, e.gamma);
+}
+function alOrientarRelativa(e) {
+  // Algunos navegadores (Firefox) entregan la orientación absoluta aquí
+  if (estado.fuente === "absoluta" || estado.fuente === "ios") return;
+  if (e.absolute === true && e.alpha !== null) {
+    estado.fuente = "relativa-absoluta";
+    nuevaLectura(rumboDesdeEuler(e.alpha, e.beta || 0, e.gamma || 0), e.beta, e.gamma);
+  }
+}
+
+function iniciarMagnetometro() {
+  if (!("Magnetometer" in window)) return;
+  try {
+    const m = new Magnetometer({ frequency: 10 });
+    m.addEventListener("reading", () => {
+      const b = Math.hypot(m.x, m.y, m.z);
+      if (!isFinite(b)) return;
+      estado.campo = estado.campo === null ? b : estado.campo + 0.3 * (b - estado.campo);
+    });
+    m.addEventListener("error", () => { estado.magnetometro = null; estado.campo = null; });
+    m.start();
+    estado.magnetometro = m;
+  } catch (e) { estado.magnetometro = null; }
+}
+
+/* Mantener la pantalla encendida */
+let candado = null;
+async function pedirPantallaEncendida() {
+  try {
+    if ("wakeLock" in navigator && document.visibilityState === "visible") {
+      candado = await navigator.wakeLock.request("screen");
+    }
+  } catch (e) { candado = null; }
+}
+document.addEventListener("visibilitychange", () => {
+  if (document.visibilityState === "visible" && estado.empezado) {
+    pedirPantallaEncendida();
+    if (ctx && ctx.state !== "running") ctx.resume();
+  }
+});
+
+/* =========================================================
+   6. EMPEZAR
+   ========================================================= */
+let empezando = null;
+
+function empezar() {
+  if (estado.empezado) { iniciarAudio(); return Promise.resolve(true); }
+  if (empezando) return empezando;
+
+  // Todo lo que necesita el toque del usuario va primero, sin esperas.
+  let permisoIOS = null;
+  if (typeof DeviceOrientationEvent !== "undefined" &&
+      typeof DeviceOrientationEvent.requestPermission === "function") {
+    permisoIOS = DeviceOrientationEvent.requestPermission();
+  }
+  iniciarAudio();
+  if (estado.vozApp) hablar("Activando la brújula.");   // desbloquea la voz en iPhone
+
+  empezando = (async () => {
+    if (!window.isSecureContext) {
+      anunciar("Esta página necesita abrirse con una dirección segura, que empiece con h t t p s. Pide ayuda para abrir el enlace correcto.", { urgente: true });
+      return false;
+    }
+    if (typeof DeviceOrientationEvent === "undefined") {
+      anunciar("Tu navegador no deja usar la brújula. Prueba con Chrome en Android o con Safari en iPhone.", { urgente: true });
+      return false;
+    }
+    if (permisoIOS) {
+      let respuesta = "denied";
+      try { respuesta = await permisoIOS; } catch (e) { respuesta = "denied"; }
+      if (respuesta !== "granted") {
+        anunciar("No diste permiso para usar los sensores. Así la brújula no funciona. Para arreglarlo, cierra Safari por completo, ábrelo otra vez y toca Empezar. Cuando te pregunte, elige Permitir.", { urgente: true });
+        return false;
+      }
+      window.addEventListener("deviceorientation", alOrientarIOS);
+    } else {
+      if ("ondeviceorientationabsolute" in window) {
+        window.addEventListener("deviceorientationabsolute", alOrientarAbsoluta);
+      }
+      window.addEventListener("deviceorientation", alOrientarRelativa);
+    }
+    iniciarMagnetometro();
+    pedirPantallaEncendida();
+
+    // Esperamos hasta 3 segundos una lectura de la brújula
+    const inicio = performance.now();
+    while (estado.rumbo === null && performance.now() - inicio < 3000) {
+      await new Promise((r) => setTimeout(r, 100));
+    }
+    if (estado.rumbo === null) {
+      anunciar("No encuentro la brújula de tu celular. Puede que no tenga brújula, o que el navegador no la deje usar. Prueba mover el celular en forma de ocho y toca Empezar otra vez. Si sigue igual, usa Chrome en Android o Safari en iPhone.", { urgente: true });
+      quitarSensores();
+      return false;
+    }
+    estado.empezado = true;
+    $("#btn-empezar").textContent = "Listo: brújula activa";
+    const enModo = estado.pantalla === "brujula" || estado.pantalla === "detector";
+    anunciar("Listo. La brújula está activa." +
+      (estado.magnetometro ? " También puedo medir la intensidad del campo." : "") +
+      (enModo ? "" : " Ahora elige un modo."), { interrumpir: !enModo });
+    vigilarSensor();
+    return true;
+  })().finally(() => { empezando = null; });
+  return empezando;
+}
+
+function quitarSensores() {
+  window.removeEventListener("deviceorientation", alOrientarIOS);
+  window.removeEventListener("deviceorientationabsolute", alOrientarAbsoluta);
+  window.removeEventListener("deviceorientation", alOrientarRelativa);
+}
+
+/* Si el sensor deja de responder, avisamos */
+let avisoSensorDado = false;
+function vigilarSensor() {
+  setInterval(() => {
+    if (!estado.empezado || document.visibilityState !== "visible") return;
+    const quieto = performance.now() - estado.ultimaLectura > 5000;
+    if (quieto && !avisoSensorDado && (estado.pantalla === "brujula" || estado.pantalla === "detector")) {
+      avisoSensorDado = true;
+      anunciar("La brújula dejó de responder. Toca Volver al inicio y luego Empezar.", { urgente: true });
+    }
+    if (!quieto) avisoSensorDado = false;
+  }, 2000);
+}
+
+/* =========================================================
+   7. BUCLE PRINCIPAL (unas 20 veces por segundo)
+   ========================================================= */
+let ultimoAnuncioNorte = 0;
+let ultimoAvisoMovido = 0;
+
+function direccionEnPalabras(rumbo) {
+  return PUNTOS[Math.round(rumbo / 45) % 8];
+}
+
+function bucle() {
+  if (estado.rumbo !== null) {
+    const r = Math.round(estado.rumbo) % 360;
+    if (estado.pantalla === "brujula") {
+      $("#b-direccion").textContent = direccionEnPalabras(estado.rumbo).toUpperCase();
+      $("#b-grados").textContent = r + " grados";
+      revisarNorte();
+    }
+    if (estado.pantalla === "detector") revisarDetector();
+  }
+  actualizarTono();
+}
+setInterval(bucle, 50);
+
+function revisarNorte() {
+  const lejos = distanciaAngular(estado.rumbo, 0);
+  if (!estado.enNorte && lejos < 10) {
+    estado.enNorte = true;
+    const ahora = performance.now();
+    if (ahora - ultimoAnuncioNorte > 1500) {
+      ultimoAnuncioNorte = ahora;
+      campanita();
+      vibrar(80);
+      anunciar("Norte", { urgente: true });
+    }
+  } else if (estado.enNorte && lejos > 15) {
+    estado.enNorte = false;   // margen para que no repita sin parar
+  }
+}
+
+function revisarDetector() {
+  const ref = estado.referencia;
+  if (!ref || estado.calibrando) return;
+  const desvioRumbo = distanciaAngular(estado.rumbo, ref.rumbo);
+  let cambioCampo = null;
+  if (ref.campo !== null && estado.campo !== null) cambioCampo = Math.abs(estado.campo - ref.campo);
+  // 1 microtesla de cambio cuenta como 1 grado de desvío
+  estado.desvio = Math.max(desvioRumbo, cambioCampo || 0);
+
+  $("#d-desvio").textContent = Math.round(desvioRumbo) + "°";
+  $("#d-campo").textContent = estado.campo !== null
+    ? "Campo: " + Math.round(estado.campo) + " µT (al calibrar: " + Math.round(ref.campo ?? estado.campo) + " µT)"
+    : "";
+
+  // Niveles con margen para no repetir anuncios
+  let nivel = estado.nivelDetector;
+  if (estado.desvio >= 60) nivel = 2;
+  else if (estado.desvio >= 20 && nivel !== 2) nivel = 1;
+  else if (nivel === 2 && estado.desvio < 50) nivel = 1;
+  if (estado.desvio < 12) nivel = 0;
+
+  if (nivel !== estado.nivelDetector) {
+    const antes = estado.nivelDetector;
+    estado.nivelDetector = nivel;
+    if (nivel === 2) { anunciar("Campo muy fuerte", { urgente: true }); vibrar([60, 60, 60]); }
+    else if (nivel === 1 && antes === 0) { anunciar("Imán detectado", { urgente: true }); vibrar(70); }
+    else if (nivel === 0) { anunciar("Sin imán cerca"); }
+  }
+  $("#d-estado").textContent = ["Sin imán cerca", "Imán detectado", "Campo muy fuerte"][nivel];
+
+  // ¿Movieron el celular?
+  if (estado.inclinacion && ref.beta !== null) {
+    const mov = Math.max(Math.abs(estado.inclinacion.beta - ref.beta), Math.abs(estado.inclinacion.gamma - ref.gamma));
+    const ahora = performance.now();
+    if (mov > 15 && ahora - ultimoAvisoMovido > 8000) {
+      ultimoAvisoMovido = ahora;
+      anunciar("Parece que moviste el celular. Déjalo quieto y toca Calibrar de nuevo.");
+    }
+  }
+}
+
+/* =========================================================
+   8. DETECTOR: CALIBRAR
+   ========================================================= */
+async function calibrar() {
+  const ok = await empezar();
+  if (!ok) return;
+  if (estado.calibrando) return;
+  estado.calibrando = true;
+  estado.referencia = null;
+  clearTimeout(geigerTimer);
+  $("#d-estado").textContent = "Calibrando…";
+  anunciar("Calibrando. No muevas el celular.");
+  const muestras = [], campos = [], betas = [], gammas = [];
+  const fin = performance.now() + 2000;
+  while (performance.now() < fin) {
+    await new Promise((r) => setTimeout(r, 50));
+    if (estado.rumboCrudo !== null) muestras.push(estado.rumboCrudo);
+    if (estado.campo !== null) campos.push(estado.campo);
+    if (estado.inclinacion) { betas.push(estado.inclinacion.beta); gammas.push(estado.inclinacion.gamma); }
+  }
+  // Promedio circular del rumbo
+  let sx = 0, sy = 0;
+  muestras.forEach((a) => { sx += Math.sin(a * Math.PI / 180); sy += Math.cos(a * Math.PI / 180); });
+  const prom = (arr) => arr.length ? arr.reduce((a, b) => a + b, 0) / arr.length : null;
+  estado.referencia = {
+    rumbo: muestras.length ? normalizar(Math.atan2(sx, sy) * 180 / Math.PI) : estado.rumbo,
+    campo: prom(campos),
+    beta: prom(betas),
+    gamma: prom(gammas)
+  };
+  estado.nivelDetector = 0;
+  estado.desvio = 0;
+  estado.calibrando = false;
+  $("#btn-calibrar").textContent = "Calibrar de nuevo";
+  $("#d-estado").textContent = "Sin imán cerca";
+  anunciar("Listo. Ahora acerca el imán despacio. Entre más rápidos y agudos los clics, más fuerte es el campo.");
+  cicloGeiger();
+}
+
+/* =========================================================
+   9. PANTALLAS Y BOTONES
+   ========================================================= */
+const INSTRUCCIONES = {
+  brujula: "Modo brújula. Sostén el celular de pie, frente a ti, y gira despacio. El tono sube cuando te acercas al norte. En el norte suena una campanita.",
+  detector: "Modo detector de imanes. Pon el celular quieto sobre la mesa y toca Calibrar.",
+  aprender: "Modo aprender. Toca una pregunta para escuchar la respuesta.",
+  ayuda: "Ayuda y cuidados.",
+  inicio: "Inicio."
+};
+
+async function irA(nombre) {
+  if (nombre === "brujula" || nombre === "detector") {
+    // Empezar se activa solo si hace falta (el toque cuenta como permiso)
+    empezar();
+  }
+  callar();
+  clearTimeout(geigerTimer);
+  estado.pantalla = nombre;
+  estado.enNorte = false;
+  $$("main > section").forEach((s) => { s.hidden = s.id !== "pantalla-" + nombre; });
+  const h = $("#pantalla-" + nombre + " h2");
+  h.focus();
+  window.scrollTo(0, 0);
+  if (nombre === "detector") {
+    estado.referencia = null;
+    estado.nivelDetector = 0;
+    $("#btn-calibrar").textContent = "Calibrar";
+    $("#d-desvio").textContent = "—";
+    $("#d-estado").textContent = "Sin calibrar";
+  }
+  // Dejamos que el lector lea el título y luego damos la instrucción
+  setTimeout(() => anunciar(INSTRUCCIONES[nombre], { interrumpir: false }), estado.vozApp ? 100 : 900);
+}
+
+$$("[data-ir]").forEach((b) => b.addEventListener("click", () => irA(b.dataset.ir)));
+$("#btn-empezar").addEventListener("click", () => {
+  if (estado.empezado) { iniciarAudio(); anunciar("La brújula ya está activa. Elige un modo."); return; }
+  empezar();
+});
+
+$("#btn-donde").addEventListener("click", async () => {
+  const ok = await empezar();
+  if (!ok) return;
+  const r = Math.round(estado.rumbo) % 360;
+  anunciar("Miras al " + direccionEnPalabras(estado.rumbo) + ". " + r + " grados.");
+});
+
+$("#btn-calibrar").addEventListener("click", calibrar);
+$("#btn-cuanto").addEventListener("click", () => {
+  if (!estado.referencia) { anunciar("Primero toca Calibrar."); return; }
+  const d = Math.round(distanciaAngular(estado.rumbo, estado.referencia.rumbo));
+  let txt = "Desviación de " + d + " grados. " + ["Sin imán cerca.", "Imán detectado.", "Campo muy fuerte."][estado.nivelDetector];
+  if (estado.campo !== null) txt += " Campo de " + Math.round(estado.campo) + " microteslas.";
+  anunciar(txt);
+});
+
+/* Volumen y pausa */
+$$(".btn-vol-menos").forEach((b) => b.addEventListener("click", () => cambiarVolumen(-1)));
+$$(".btn-vol-mas").forEach((b) => b.addEventListener("click", () => cambiarVolumen(1)));
+function cambiarVolumen(paso) {
+  iniciarAudio();
+  estado.volumen = Math.max(1, Math.min(5, estado.volumen + paso));
+  try { localStorage.setItem("bs-volumen", String(estado.volumen)); } catch (e) {}
+  aplicarVolumen();
+  anunciar("Volumen " + estado.volumen + " de 5.");
+}
+$$(".btn-pausa").forEach((b) => b.addEventListener("click", () => {
+  iniciarAudio();
+  estado.pausado = !estado.pausado;
+  $$(".btn-pausa").forEach((x) => { x.textContent = estado.pausado ? "Reanudar sonido" : "Pausar sonido"; });
+  anunciar(estado.pausado ? "Sonido en pausa." : "Sonido activo.");
+}));
+
+/* Interruptor de voz */
+function pintarVoz() {
+  const b = $("#btn-voz");
+  b.setAttribute("aria-checked", estado.vozApp ? "true" : "false");
+  b.textContent = "Voz de la app: " + (estado.vozApp ? "sí" : "no");
+}
+$("#btn-voz").addEventListener("click", () => {
+  estado.vozApp = !estado.vozApp;
+  try { localStorage.setItem("bs-voz", estado.vozApp ? "si" : "no"); } catch (e) {}
+  pintarVoz();
+  if (!estado.vozApp) callar();
+  anunciar(estado.vozApp ? "Voz de la app activada." : "Voz de la app apagada. Tu lector de pantalla dirá los mensajes.");
+});
+pintarVoz();
+if (!("speechSynthesis" in window)) {
+  estado.vozApp = false;
+  pintarVoz();
+  $("#btn-voz").disabled = true;
+}
+
+/* Modo Aprender: crear los botones */
+const lista = $("#lista-temas");
+TEMAS.forEach((t) => {
+  const b = document.createElement("button");
+  b.type = "button";
+  b.id = "tema-" + t.id;
+  b.textContent = t.pregunta;
+  b.setAttribute("aria-expanded", "false");
+  b.setAttribute("aria-controls", "texto-" + t.id);
+  const div = document.createElement("div");
+  div.id = "texto-" + t.id;
+  div.className = "explicacion";
+  div.hidden = true;
+  t.texto.forEach((frase) => { const p = document.createElement("p"); p.textContent = frase; div.appendChild(p); });
+  b.addEventListener("click", () => {
+    iniciarAudio();
+    $$("#lista-temas .explicacion").forEach((d) => { d.hidden = d !== div; });
+    $$("#lista-temas button").forEach((x) => x.setAttribute("aria-expanded", x === b ? "true" : "false"));
+    anunciar(t.texto.join(" "));
+  });
+  lista.appendChild(b);
+  lista.appendChild(div);
+});
+$("#btn-callar").addEventListener("click", () => { callar(); $("#mensaje-texto").textContent = "Lectura detenida."; });
+
+$("#btn-leer-ayuda").addEventListener("click", () => {
+  iniciarAudio();
+  const partes = $$("#texto-ayuda h3, #texto-ayuda p, #texto-ayuda li").map((el) => el.textContent.trim());
+  anunciar(partes.join(". ").replace(/\.\./g, ".").replace(/:\./g, ":"));
+});
+
+/* =========================================================
+   10. FUNCIONAR SIN INTERNET
+   ========================================================= */
+if ("serviceWorker" in navigator) {
+  window.addEventListener("load", () => {
+    navigator.serviceWorker.register("sw.js").catch(() => {});
+  });
+}
+</script>
+</body>
+</html>
