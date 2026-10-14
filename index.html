@@ -121,6 +121,7 @@
     <p>Hola. Con esta app vas a escuchar el campo magnético de la Tierra y de los imanes.</p>
     <p>Primero toca <strong>Empezar</strong>. Así se activan el sonido y la brújula.</p>
     <button id="btn-empezar" class="grande" type="button">Empezar</button>
+    <p id="diagnostico" class="aviso" hidden></p>
     <h3 id="h-modos">Elige un modo</h3>
     <div role="group" aria-labelledby="h-modos">
       <button type="button" data-ir="brujula">Modo Brújula</button>
@@ -500,9 +501,21 @@ function rumboDesdeEuler(alpha, beta, gamma) {
   // Dirección de la parte de arriba del celular (eje y)
   const yx = -sA * cB;
   const yy = cA * cB;
+  return rumboDeEjes(zx, zy, yx, yy);
+}
+
+/* Lo mismo, pero desde el cuaternión del sensor AbsoluteOrientationSensor */
+function rumboDesdeCuaternion(q) {
+  const [x, y, z, w] = q;
+  const zx = -(2 * (x * z + y * w)), zy = -(2 * (y * z - x * w));
+  const yx = 2 * (x * y - z * w),    yy = 1 - 2 * (x * x + z * z);
+  return rumboDeEjes(zx, zy, yx, yy);
+}
+
+function rumboDeEjes(zx, zy, yx, yy) {
   const usarAtras = Math.hypot(zx, zy) > Math.hypot(yx, yy);
   const x = usarAtras ? zx : yx, y = usarAtras ? zy : yy;
-  return normalizar(Math.atan2(x, y) / r);
+  return normalizar(Math.atan2(x, y) * 180 / Math.PI);
 }
 
 function nuevaLectura(rumbo, beta, gamma) {
@@ -515,24 +528,73 @@ function nuevaLectura(rumbo, beta, gamma) {
   estado.ultimaLectura = performance.now();
 }
 
+/* Datos para saber qué falló si no hay brújula */
+const diag = { abs: 0, absNulos: 0, rel: 0, relNulos: 0, ios: 0, sensor: "sin probar", permiso: "?" };
+
 function alOrientarIOS(e) {
+  diag.ios++;
   if (typeof e.webkitCompassHeading === "number" && !isNaN(e.webkitCompassHeading)) {
     estado.fuente = "ios";
     nuevaLectura(normalizar(e.webkitCompassHeading), e.beta, e.gamma);
   }
 }
 function alOrientarAbsoluta(e) {
-  if (e.alpha === null) return;
+  diag.abs++;
+  if (e.alpha === null || e.alpha === undefined) { diag.absNulos++; return; }
   estado.fuente = "absoluta";
   nuevaLectura(rumboDesdeEuler(e.alpha, e.beta || 0, e.gamma || 0), e.beta, e.gamma);
 }
 function alOrientarRelativa(e) {
+  diag.rel++;
+  if (e.alpha === null || e.alpha === undefined) diag.relNulos++;
   // Algunos navegadores (Firefox) entregan la orientación absoluta aquí
-  if (estado.fuente === "absoluta" || estado.fuente === "ios") return;
+  if (estado.fuente && estado.fuente !== "relativa-absoluta") return;
   if (e.absolute === true && e.alpha !== null) {
     estado.fuente = "relativa-absoluta";
     nuevaLectura(rumboDesdeEuler(e.alpha, e.beta || 0, e.gamma || 0), e.beta, e.gamma);
   }
+}
+
+/* Segunda forma de leer la brújula en Android (Chrome, Samsung Internet) */
+let sensorOrientacion = null;
+function iniciarSensorOrientacion() {
+  if (!("AbsoluteOrientationSensor" in window)) { diag.sensor = "no existe"; return; }
+  try {
+    const s = new AbsoluteOrientationSensor({ frequency: 30, referenceFrame: "device" });
+    s.addEventListener("reading", () => {
+      if (!s.quaternion) return;
+      diag.sensor = "funciona";
+      // Solo se usa si los eventos de orientación no dieron datos
+      if (estado.fuente && estado.fuente !== "sensor") return;
+      estado.fuente = "sensor";
+      const [x, y, z, w] = s.quaternion;
+      const beta = Math.asin(Math.max(-1, Math.min(1, 2 * (y * z + x * w)))) * 180 / Math.PI;
+      const gamma = Math.atan2(-2 * (x * z - y * w), 1 - 2 * (x * x + y * y)) * 180 / Math.PI;
+      nuevaLectura(rumboDesdeCuaternion(s.quaternion), beta, gamma);
+    });
+    s.addEventListener("error", (e) => { diag.sensor = "error: " + (e.error && e.error.name); });
+    s.start();
+    diag.sensor = "iniciado";
+    sensorOrientacion = s;
+  } catch (e) { diag.sensor = "error: " + e.name; }
+}
+
+async function revisarPermisoSensores() {
+  if (!navigator.permissions || !navigator.permissions.query) return;
+  try {
+    const estados = await Promise.all(["accelerometer", "gyroscope", "magnetometer"].map((n) =>
+      navigator.permissions.query({ name: n }).then((r) => r.state).catch(() => "?")));
+    diag.permiso = estados.join("/");
+  } catch (e) {}
+}
+
+function textoDiagnostico() {
+  const ua = navigator.userAgent;
+  const nav = /SamsungBrowser/.test(ua) ? "Samsung Internet" : /; wv\)/.test(ua) ? "navegador dentro de otra app" :
+    /Firefox/.test(ua) ? "Firefox" : /Chrome/.test(ua) ? "Chrome" : /Safari/.test(ua) ? "Safari" : "otro";
+  return "Navegador: " + nav + ". Eventos absolutos: " + diag.abs + " (vacíos " + diag.absNulos + "). " +
+    "Eventos normales: " + diag.rel + " (vacíos " + diag.relNulos + "). iOS: " + diag.ios + ". " +
+    "Sensor de orientación: " + diag.sensor + ". Permisos: " + diag.permiso + ".";
 }
 
 function iniciarMagnetometro() {
@@ -606,36 +668,74 @@ function empezar() {
         window.addEventListener("deviceorientationabsolute", alOrientarAbsoluta);
       }
       window.addEventListener("deviceorientation", alOrientarRelativa);
+      if (!sensorOrientacion) iniciarSensorOrientacion();
     }
     iniciarMagnetometro();
     pedirPantallaEncendida();
+    revisarPermisoSensores();
 
-    // Esperamos hasta 3 segundos una lectura de la brújula
+    // Esperamos hasta 5 segundos una lectura de la brújula
     const inicio = performance.now();
-    while (estado.rumbo === null && performance.now() - inicio < 3000) {
+    while (estado.rumbo === null && performance.now() - inicio < 5000) {
       await new Promise((r) => setTimeout(r, 100));
     }
     if (estado.rumbo === null) {
-      anunciar("No encuentro la brújula de tu celular. Puede que no tenga brújula, o que el navegador no la deje usar. Prueba mover el celular en forma de ocho y toca Empezar otra vez. Si sigue igual, usa Chrome en Android o Safari en iPhone.", { urgente: true });
-      quitarSensores();
+      // Seguimos escuchando: si la brújula aparece después, avisamos.
+      esperarBrujulaTarde();
+      anunciar(mensajeSinBrujula(), { urgente: true });
+      $("#diagnostico").textContent = textoDiagnostico();
+      $("#diagnostico").hidden = false;
       return false;
     }
-    estado.empezado = true;
-    $("#btn-empezar").textContent = "Listo: brújula activa";
-    const enModo = estado.pantalla === "brujula" || estado.pantalla === "detector";
-    anunciar("Listo. La brújula está activa." +
-      (estado.magnetometro ? " También puedo medir la intensidad del campo." : "") +
-      (enModo ? "" : " Ahora elige un modo."), { interrumpir: !enModo });
-    vigilarSensor();
+    $("#diagnostico").hidden = true;
+    marcarListo();
     return true;
   })().finally(() => { empezando = null; });
   return empezando;
 }
 
-function quitarSensores() {
-  window.removeEventListener("deviceorientation", alOrientarIOS);
-  window.removeEventListener("deviceorientationabsolute", alOrientarAbsoluta);
-  window.removeEventListener("deviceorientation", alOrientarRelativa);
+let vigilando = false;
+function marcarListo() {
+  if (estado.empezado) return;
+  estado.empezado = true;
+  $("#btn-empezar").textContent = "Listo: brújula activa";
+  const enModo = estado.pantalla === "brujula" || estado.pantalla === "detector";
+  anunciar("Listo. La brújula está activa." +
+    (estado.magnetometro ? " También puedo medir la intensidad del campo." : "") +
+    (enModo ? "" : " Ahora elige un modo."), { interrumpir: !enModo });
+  if (!vigilando) { vigilando = true; vigilarSensor(); }
+}
+
+/* Si la brújula responde tarde, la activamos sin que tengas que tocar nada */
+let esperaTarde = null;
+function esperarBrujulaTarde() {
+  clearInterval(esperaTarde);
+  const limite = performance.now() + 60000;
+  esperaTarde = setInterval(() => {
+    if (estado.rumbo !== null) {
+      clearInterval(esperaTarde);
+      $("#diagnostico").hidden = true;
+      marcarListo();
+    } else if (performance.now() > limite) {
+      clearInterval(esperaTarde);
+    }
+  }, 300);
+}
+
+/* Mensaje según lo que falló */
+function mensajeSinBrujula() {
+  const ua = navigator.userAgent;
+  const permisos = diag.permiso.split("/");
+  if (permisos.includes("denied") || /NotAllowed/.test(diag.sensor)) {
+    return "El navegador tiene bloqueados los sensores de movimiento. Para arreglarlo, toca los tres puntos de Chrome, luego Configuración, Configuración de sitios, Sensores de movimiento, y elige Permitir. Después recarga la página y toca Empezar.";
+  }
+  if (/; wv\)/.test(ua)) {
+    return "Abriste la app dentro de otra aplicación, y ahí la brújula no funciona. Abre el enlace directamente en Chrome y toca Empezar.";
+  }
+  if (diag.abs + diag.rel === 0 && !/funciona/.test(diag.sensor)) {
+    return "El navegador no me envía datos de los sensores. Prueba abrir el enlace en Chrome. Si ya estás en Chrome, revisa en Configuración de sitios que los Sensores de movimiento estén permitidos.";
+  }
+  return "No encuentro la brújula de tu celular. Mueve el celular en forma de ocho durante unos segundos. Si la brújula aparece, te aviso. Si no, toca Empezar otra vez.";
 }
 
 /* Si el sensor deja de responder, avisamos */
