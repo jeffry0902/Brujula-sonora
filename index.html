@@ -97,6 +97,8 @@
     overflow: hidden; clip: rect(0 0 0 0);
     white-space: nowrap; border: 0;
   }
+  .contador { font-size: 2rem; font-weight: 800; color: var(--acento); text-align: center; margin: 8px 0; }
+  #exp-paso { font-size: 1.3rem; padding: 12px 16px; }
   [hidden] { display: none !important; }
   @media (prefers-reduced-motion: reduce) { button:active { transform: none; } }
 </style>
@@ -118,14 +120,14 @@
   <!-- ============ INICIO ============ -->
   <section id="pantalla-inicio" aria-labelledby="h-inicio">
     <h2 id="h-inicio" tabindex="-1">Inicio</h2>
-    <p>Hola. Con esta app vas a escuchar el campo magnético de la Tierra y de los imanes.</p>
-    <p>Primero toca <strong>Empezar</strong>. Así se activan el sonido y la brújula.</p>
+    <p>Hola. Con esta app vas a escuchar el campo magnético de la Tierra y a hacer experimentos con imanes.</p>
+    <p>Toca <strong>Empezar</strong>. Si aparece un mensaje, elige Permitir.</p>
     <button id="btn-empezar" class="grande" type="button">Empezar</button>
-    <p id="diagnostico" class="aviso" hidden></p>
     <h3 id="h-modos">Elige un modo</h3>
     <div role="group" aria-labelledby="h-modos">
-      <button type="button" data-ir="brujula">Modo Brújula</button>
-      <button type="button" data-ir="detector">Modo Detector de imanes</button>
+      <button type="button" id="btn-modo-brujula" data-ir="brujula">Modo Brújula</button>
+      <button type="button" id="btn-modo-experimentos" data-ir="experimentos">Experimentos con imanes</button>
+      <button type="button" id="btn-modo-detector" data-ir="detector" hidden>Modo Detector de imanes</button>
       <button type="button" data-ir="aprender">Modo Aprender</button>
       <button type="button" data-ir="ayuda" class="secundario">Ayuda y cuidados</button>
     </div>
@@ -152,7 +154,7 @@
   <section id="pantalla-detector" aria-labelledby="h-detector" hidden>
     <h2 id="h-detector" tabindex="-1">Modo Detector de imanes</h2>
     <p>Pon el celular quieto sobre la mesa y toca Calibrar.</p>
-    <p class="aviso"><strong>Importante:</strong> el celular se queda quieto. Lo que se mueve es el imán. Acércalo despacio.</p>
+    <p class="aviso"><strong>Importante:</strong> el celular se queda quieto. Lo que se mueve es el imán. Acércalo despacio, por un lado del celular.</p>
     <p id="aviso-sensor" class="aviso" hidden></p>
     <button id="btn-calibrar" class="grande" type="button">Calibrar</button>
     <button id="btn-cuanto" type="button">¿Cuánto se desvía?</button>
@@ -167,6 +169,30 @@
     </div>
     <button type="button" class="btn-pausa secundario">Pausar sonido</button>
     <button type="button" class="secundario" data-ir="inicio">Volver al inicio</button>
+  </section>
+
+  <!-- ============ EXPERIMENTOS ============ -->
+  <section id="pantalla-experimentos" aria-labelledby="h-experimentos" hidden>
+    <h2 id="h-experimentos" tabindex="-1">Experimentos con imanes</h2>
+    <p>Aquí sientes el magnetismo con tus manos. Yo te guío paso a paso. Elige un experimento.</p>
+    <div id="lista-experimentos"></div>
+    <button type="button" class="secundario" data-ir="inicio">Volver al inicio</button>
+  </section>
+
+  <section id="pantalla-experimento" aria-labelledby="h-experimento" hidden>
+    <h2 id="h-experimento" tabindex="-1">Experimento</h2>
+    <p id="exp-paso" class="explicacion"></p>
+    <div id="exp-extra"></div>
+    <button id="btn-siguiente" class="grande" type="button">Siguiente paso</button>
+    <div class="fila">
+      <button id="btn-repetir" type="button" class="secundario">Repetir</button>
+      <button id="btn-anterior" type="button" class="secundario">Paso anterior</button>
+    </div>
+    <button type="button" class="secundario" data-ir="experimentos">Volver a experimentos</button>
+    <h3>Necesitas</h3>
+    <ul id="exp-materiales"></ul>
+    <h3>Para quien te acompaña</h3>
+    <p id="exp-profe"></p>
   </section>
 
   <!-- ============ APRENDER ============ -->
@@ -199,6 +225,7 @@
         <li>No pongas imanes fuertes sobre la cámara. Pueden afectar el estabilizador de la cámara.</li>
         <li>Si tu celular tiene lápiz, como el S Pen, puede salir un aviso de que el imán lo afecta. Es temporal: al quitar el imán, el lápiz vuelve a funcionar.</li>
         <li>Mantén los imanes lejos de tarjetas bancarias. Las pueden borrar.</li>
+        <li>Usa imanes de barra grandes. No uses imanes pequeños de bolita o de cubito: son peligrosos si alguien se los traga.</li>
         <li>Acerca el imán despacio. No lo golpees contra el celular.</li>
       </ul>
       <h3>Si no escuchas nada</h3>
@@ -207,6 +234,8 @@
         <li>En iPhone, revisa que el interruptor de silencio esté apagado.</li>
         <li>Toca Empezar otra vez.</li>
       </ul>
+      <h3>Qué puede hacer este celular</h3>
+      <p id="info-celular">Toca Empezar en el inicio para revisar este celular.</p>
       <h3>Si dos voces hablan a la vez</h3>
       <p>Si usas TalkBack o VoiceOver, puedes apagar la voz de la app. El botón está arriba: Voz de la app. Así tu lector de pantalla dirá los mensajes.</p>
     </div>
@@ -271,6 +300,95 @@ const TEMAS = [
   }
 ];
 
+/* Experimentos con imanes: ella siente el fenómeno con las manos y la app la guía.
+   Campos de cada paso: t (texto), tSin (texto si el celular no tiene brújula),
+   esperar (segundos), brujula (botón ¿Hacia dónde miro?), contar (etiqueta de la medida),
+   grafica (botón Escuchar mi gráfica). */
+const EXPERIMENTOS = [
+  {
+    id: "colgado",
+    titulo: "El imán que busca el norte",
+    necesitas: ["Un imán de barra con el polo norte marcado al tacto", "Un hilo de unos 30 centímetros", "Un lápiz", "Dos montones de libros de la misma altura"],
+    profe: "Marca el polo norte del imán con cinta o con una muesca que se sienta al tacto. Retira de la mesa los objetos de hierro.",
+    pasos: [
+      { t: "Pon los dos montones de libros separados, a una cuarta de distancia." },
+      { t: "Haz un lazo en una punta del hilo. Mete el imán acostado dentro del lazo, por la mitad." },
+      { t: "Amarra la otra punta del hilo al lápiz. Pon el lápiz sobre los dos montones. El imán debe colgar sin tocar nada." },
+      { t: "Quita las manos y espera. Te aviso cuando pase medio minuto.", esperar: 30 },
+      { t: "Toca con cuidado la punta del imán que tiene la marca, sin empujarla. Esa punta mira hacia el norte." },
+      { t: "Vamos a comprobarlo con la brújula. Aléjate un paso del imán. Sostén el celular de pie, frente a ti, mirando hacia donde apuntaba la marca. Luego toca ¿Hacia dónde miro?",
+        tSin: "Pregúntale a quien te acompaña hacia dónde queda el norte. ¿Coincide con la marca del imán?", brujula: true },
+      { t: "Ahora gira el imán con la mano y suéltalo. Te aviso cuando pase medio minuto.", esperar: 30 },
+      { t: "Toca otra vez la punta marcada. ¿Volvió a mirar hacia el mismo lado?" }
+    ],
+    cierre: "El imán colgado se comporta como una brújula. Se alinea con el campo magnético de la Tierra. Su polo norte apunta hacia el norte, porque allá queda un polo sur magnético de la Tierra."
+  },
+  {
+    id: "agua",
+    titulo: "Brújula de agua",
+    necesitas: ["Un plato hondo de plástico con agua", "Una aguja dentro de un pedazo de pitillo, con las puntas tapadas con cinta", "Un pedazo de corcho o de icopor con el pitillo pegado encima", "Una bolita de plastilina en una punta del pitillo", "El imán de barra"],
+    profe: "Prepara la aguja dentro del pitillo y tapa bien las dos puntas con cinta, para que no pinche. Pega el pitillo sobre el corcho y pon una bolita de plastilina en una punta: es la flecha que ella toca. Pon una toalla debajo del plato.",
+    pasos: [
+      { t: "Pon el plato sobre la mesa, lejos de objetos de metal." },
+      { t: "Primero, sin imantar. Pon el corcho a flotar en el centro del plato. Gíralo suave y suéltalo. Te aviso en 20 segundos.", esperar: 20 },
+      { t: "Busca la bolita de plastilina con un dedo, sin empujarla. Recuerda hacia dónde quedó. Sin imantar, puede quedar hacia cualquier lado." },
+      { t: "Saca el corcho del agua. Frota el pitillo con una punta del imán, desde la bolita hacia la otra punta. Siempre en la misma dirección, unas 20 veces. Levanta el imán al regresar." },
+      { t: "Guarda el imán lejos del plato, a más de un brazo." },
+      { t: "Pon el corcho a flotar otra vez. Gíralo suave y suéltalo. Te aviso en 30 segundos.", esperar: 30 },
+      { t: "Busca la bolita con un dedo, sin empujarla. ¿Hacia dónde quedó?" },
+      { t: "Gíralo otra vez y suéltalo. Te aviso en 30 segundos.", esperar: 30 },
+      { t: "Toca la bolita. Si quedó hacia el mismo lado que antes, tu aguja ya es una brújula. Si quieres, comprueba la dirección: aléjate un paso, sostén el celular de pie hacia donde apunta la bolita y toca ¿Hacia dónde miro?",
+        tSin: "Toca la bolita. Si quedó hacia el mismo lado que antes, tu aguja ya es una brújula.", brujula: true }
+    ],
+    cierre: "Al frotarla, la aguja se volvió un imán. Un imán que flota libre se alinea con el campo magnético de la Tierra. Así funcionaban las primeras brújulas."
+  },
+  {
+    id: "polos",
+    titulo: "Los polos: ¿se atraen o se repelen?",
+    necesitas: ["Dos imanes de barra", "Uno de ellos con el polo norte marcado al tacto"],
+    profe: "Marca al tacto el polo norte de uno de los imanes. Usa imanes de barra grandes, no imanes pequeños de neodimio.",
+    pasos: [
+      { t: "Toma el imán marcado en una mano y el otro imán en la otra mano." },
+      { t: "Cuidado: no pongas los dedos entre los dos imanes." },
+      { t: "Acerca despacio la punta marcada a una punta del otro imán. ¿Se jalan o se empujan? Cuando lo sepas, toca Siguiente paso." },
+      { t: "Si se empujan, son polos iguales: esa punta también es norte. Si se jalan, son polos distintos: esa punta es sur." },
+      { t: "Ahora acerca la punta marcada a la otra punta del segundo imán. ¿Qué pasa ahora?" },
+      { t: "Debe pasar lo contrario. Cada imán tiene dos polos: un norte y un sur." }
+    ],
+    cierre: "Polos iguales se repelen. Polos distintos se atraen. Por eso el polo norte de una brújula apunta hacia un polo sur magnético."
+  },
+  {
+    id: "fuerza",
+    titulo: "¿Hasta dónde llega la fuerza?",
+    necesitas: ["Un imán de barra", "Unos 15 clips metálicos en un platito", "3 cartoncitos del tamaño de la punta del imán"],
+    profe: "Deja los clips en un platito, al alcance de su mano. Los cartoncitos pueden salir de una caja de cereal.",
+    pasos: [
+      { t: "Vamos a medir cuántos clips sostiene el imán. Cuelga un clip de la punta del imán. Luego cuelga otro clip del primero, como una cadena." },
+      { t: "Sigue agregando clips hasta que se caigan. Cuenta los que se sostienen con los botones Uno más y Uno menos. Luego toca Guardar medida.", contar: "sin cartón" },
+      { t: "Pon un cartoncito en la punta del imán y arma otra vez la cadena. Cuenta y toca Guardar medida.", contar: "con 1 cartón" },
+      { t: "Ahora pon 2 cartoncitos juntos. Arma la cadena, cuenta y guarda.", contar: "con 2 cartones" },
+      { t: "Ahora pon los 3 cartoncitos. Arma la cadena, cuenta y guarda.", contar: "con 3 cartones" },
+      { t: "Escucha tu gráfica. Suena un tono por cada medida. Entre más alto el tono, más clips.", grafica: true },
+      { t: "¿La fuerza baja de a poquito o baja rápido? Piénsalo y toca Siguiente paso." }
+    ],
+    cierre: "La fuerza magnética atraviesa el cartón sin tocar los clips. Pero se debilita rápido cuando aumenta la distancia."
+  },
+  {
+    id: "cajas",
+    titulo: "Cajas misteriosas",
+    necesitas: ["Tres cajitas de fósforos vacías y cerradas", "Un clip amarrado a un hilo", "Cinta"],
+    profe: "Antes de la actividad, pega un imán dentro de dos cajitas, en lugares distintos. Deja una vacía y ciérralas bien. No le digas cuál es cuál.",
+    pasos: [
+      { t: "Toma el hilo por la punta. El clip queda colgando." },
+      { t: "Pasa el clip despacio por encima de la primera caja, de una punta a la otra." },
+      { t: "Si sientes que el hilo jala hacia la caja, ahí hay un imán. Marca ese lugar con un pedacito de cinta." },
+      { t: "Repite con las otras dos cajas." },
+      { t: "¿Cuál caja no tiene imán? ¿Cómo lo supiste? Cuando lo sepas, toca Siguiente paso." }
+    ],
+    cierre: "El campo magnético atraviesa el cartón. Por eso puedes encontrar el imán sin verlo y sin abrir la caja."
+  }
+];
+
 const PUNTOS = ["norte", "nororiente", "oriente", "suroriente", "sur", "suroccidente", "occidente", "noroccidente"];
 
 /* =========================================================
@@ -299,7 +417,9 @@ const estado = {
   calibrando: false,
   nivelDetector: 0,    // 0 nada, 1 imán, 2 fuerte
   desvio: 0,
-  nivelContinuo: 0     // 0 a 1, para el sonido
+  nivelContinuo: 0,    // 0 a 1, para el sonido
+  tieneBrujula: null,  // null = sin revisar, true/false
+  detectorDisponible: false
 };
 
 try {
@@ -310,6 +430,10 @@ try {
 } catch (e) { /* sin almacenamiento: usamos valores por defecto */ }
 
 const $ = (sel) => document.querySelector(sel);
+function esIPhone() {
+  return /iPhone|iPad|iPod/.test(navigator.userAgent) ||
+    (/Macintosh/.test(navigator.userAgent) && navigator.maxTouchPoints > 1);
+}
 const $$ = (sel) => Array.from(document.querySelectorAll(sel));
 
 /* =========================================================
@@ -536,10 +660,17 @@ function nuevaLectura(rumbo, beta, gamma) {
 }
 
 /* Datos para saber qué falló si no hay brújula */
-const diag = { abs: 0, absNulos: 0, rel: 0, relNulos: 0, ios: 0, sensor: "sin probar", permiso: "?" };
+const diag = {
+  abs: 0, absNulos: 0, rel: 0, relNulos: 0, ios: 0, iosInvalido: 0, sensor: "sin probar", permiso: "?",
+  relConAbsoluta: 0,  // 'deviceorientation' con absolute === true: Chrome no tiene orientación relativa (sin giroscopio)
+  relSinAbsoluta: 0,  // 'deviceorientation' con absolute === false: hay giroscopio
+  giroSi: 0, giroNo: 0 // 'devicemotion' con o sin rotationRate
+};
 
 function alOrientarIOS(e) {
   if (typeof e.webkitCompassHeading === "number" && !isNaN(e.webkitCompassHeading)) {
+    // En iPhone, una precisión negativa significa rumbo inválido (sin calibrar o sin datos).
+    if (typeof e.webkitCompassAccuracy === "number" && e.webkitCompassAccuracy < 0) { diag.iosInvalido++; return; }
     diag.ios++;
     estado.fuente = "ios";
     nuevaLectura(normalizar(e.webkitCompassHeading), e.beta, e.gamma);
@@ -554,6 +685,8 @@ function alOrientarAbsoluta(e) {
 function alOrientarRelativa(e) {
   diag.rel++;
   if (e.alpha === null || e.alpha === undefined) diag.relNulos++;
+  else if (e.absolute === true) diag.relConAbsoluta++;
+  else diag.relSinAbsoluta++;
   // Algunos navegadores (Firefox) entregan la orientación absoluta aquí
   if (estado.fuente && estado.fuente !== "relativa-absoluta") return;
   if (e.absolute === true && e.alpha !== null) {
@@ -586,6 +719,15 @@ function iniciarSensorOrientacion() {
   } catch (e) { diag.sensor = "error: " + e.name; }
 }
 
+/* ¿Tiene giroscopio? Solo para decidir si el detector de imanes puede funcionar. */
+let movimientosVistos = 0;
+function alMoverse(e) {
+  const r = e.rotationRate;
+  if (r && r.alpha !== null && r.alpha !== undefined && !isNaN(r.alpha)) diag.giroSi++;
+  else diag.giroNo++;
+  if (++movimientosVistos > 40) window.removeEventListener("devicemotion", alMoverse);
+}
+
 async function revisarPermisoSensores() {
   if (!navigator.permissions || !navigator.permissions.query) return;
   try {
@@ -601,7 +743,8 @@ function textoDiagnostico() {
     /Firefox/.test(ua) ? "Firefox" : /Chrome/.test(ua) ? "Chrome" : /Safari/.test(ua) ? "Safari" : "otro";
   return "Navegador: " + nav + ". Eventos absolutos: " + diag.abs + " (vacíos " + diag.absNulos + "). " +
     "Eventos normales: " + diag.rel + " (vacíos " + diag.relNulos + "). iOS: " + diag.ios + ". " +
-    "Sensor de orientación: " + diag.sensor + ". Permisos: " + diag.permiso + ".";
+    "Sensor de orientación: " + diag.sensor + ". Permisos: " + diag.permiso + ". " +
+    "Giroscopio: " + (tieneGiroscopio() ? "sí" : sinGiroscopio() ? "no" : "?") + ".";
 }
 
 /* Sensor magnético directo (microteslas). En Android, Chrome lo trae apagado:
@@ -676,10 +819,9 @@ function empezar() {
       let respuesta = "denied";
       try { respuesta = await permisoIOS; } catch (e) { respuesta = "denied"; }
       if (respuesta !== "granted") {
-        const esIOS = /iPhone|iPad|iPod|Macintosh/.test(navigator.userAgent) && !/Android/.test(navigator.userAgent);
-        anunciar(esIOS
-          ? "No diste permiso para usar los sensores. Así la brújula no funciona. Para arreglarlo, cierra Safari por completo, ábrelo otra vez y toca Empezar. Cuando te pregunte, elige Permitir."
-          : "No diste permiso para usar los sensores. Así la brújula no funciona. Toca Empezar otra vez y elige Permitir. Si no te pregunta, en Chrome ve a Configuración de sitios, Sensores de movimiento, y elige Permitir.",
+        anunciar(esIPhone()
+          ? "La brújula necesita tu permiso. Cierra Safari, ábrelo otra vez y toca Empezar. Cuando aparezca el mensaje, elige Permitir. Mientras tanto, puedes hacer los Experimentos con imanes."
+          : "La brújula necesita tu permiso. Toca Empezar otra vez y elige Permitir. Mientras tanto, puedes hacer los Experimentos con imanes.",
           { urgente: true });
         return false;
       }
@@ -690,6 +832,7 @@ function empezar() {
       window.addEventListener("deviceorientationabsolute", alOrientarAbsoluta);
     }
     window.addEventListener("deviceorientation", alOrientarRelativa);
+    if (!esIPhone()) window.addEventListener("devicemotion", alMoverse);
     if (!sensorOrientacion) iniciarSensorOrientacion();
     iniciarMagnetometro();
     pedirPantallaEncendida();
@@ -701,14 +844,14 @@ function empezar() {
       await new Promise((r) => setTimeout(r, 100));
     }
     if (estado.rumbo === null) {
+      const msj = mensajeSinBrujula();
       // Seguimos escuchando: si la brújula aparece después, avisamos.
-      esperarBrujulaTarde();
-      anunciar(mensajeSinBrujula(), { urgente: true });
-      $("#diagnostico").textContent = textoDiagnostico();
-      $("#diagnostico").hidden = false;
+      if (estado.tieneBrujula !== false) esperarBrujulaTarde();
+      $("#btn-empezar").textContent = "Empezar otra vez";
+      anunciar(msj, { urgente: true });
+      actualizarMenu();
       return false;
     }
-    $("#diagnostico").hidden = true;
     marcarListo();
     return true;
   })().finally(() => { empezando = null; });
@@ -718,12 +861,52 @@ function empezar() {
 function marcarListo() {
   if (estado.empezado) return;
   estado.empezado = true;
+  estado.tieneBrujula = true;
   $("#btn-empezar").textContent = "Listo: brújula activa";
   if (estado.pantalla === "detector") actualizarAvisoSensor();
-  const enModo = estado.pantalla === "brujula" || estado.pantalla === "detector";
-  anunciar("Listo. La brújula está activa." +
-    (estado.magnetometro ? " También puedo medir la intensidad del campo." : "") +
-    (enModo ? "" : " Ahora elige un modo."), { interrumpir: !enModo });
+  const enModo = estado.pantalla !== "inicio";
+  if (!enModo) anunciar("Listo. La brújula está activa. Ahora elige un modo.");
+  actualizarMenu();
+  // Un momento después ya sabemos si el detector de imanes puede funcionar
+  setTimeout(() => {
+    actualizarMenu();
+    if (estado.detectorDisponible && !estado.avisoDetector && estado.pantalla === "inicio") {
+      estado.avisoDetector = true;
+      anunciar("Tu celular también puede detectar imanes. En el menú aparece el Modo Detector de imanes.", { interrumpir: false });
+    }
+  }, 1500);
+}
+
+/* ---- ¿Qué puede hacer este celular? (sin pedirle nada a ella) ----
+   En celulares con giroscopio, Android entrega una brújula "fusionada" que
+   está hecha para ignorar imanes cercanos: ahí el detector no funciona desde
+   un navegador. En celulares sin giroscopio, Chrome calcula la brújula directo
+   del magnetómetro, y el imán sí la mueve. El iPhone no se ha comprobado. */
+function tieneGiroscopio() { return diag.relSinAbsoluta > 0 || diag.giroSi > 0; }
+function sinGiroscopio() { return !tieneGiroscopio() && (diag.relConAbsoluta > 0 || diag.giroNo > 0); }
+
+function evaluarDetector() {
+  if (estado.magOK) return true;                     // magnetómetro directo en µT
+  if (esIPhone() || estado.rumbo === null) return false;
+  return sinGiroscopio();
+}
+
+function actualizarMenu() {
+  estado.detectorDisponible = evaluarDetector();
+  $("#btn-modo-detector").hidden = !estado.detectorDisponible;
+  $("#btn-modo-brujula").hidden = estado.tieneBrujula === false;
+  // Información para quien ayuda (en Ayuda y cuidados)
+  let info;
+  if (estado.tieneBrujula === false) {
+    info = "Brújula: este celular no la tiene. Detector de imanes: no disponible. Los Experimentos con imanes y el modo Aprender sí funcionan.";
+  } else if (estado.tieneBrujula) {
+    info = "Brújula: sí. Detector de imanes: " + (estado.detectorDisponible
+      ? "sí, disponible en el menú."
+      : "no disponible en este celular, porque su navegador no deja medir imanes. Los Experimentos con imanes cubren el mismo tema.");
+  } else {
+    info = "Toca Empezar en el inicio para revisar este celular.";
+  }
+  $("#info-celular").textContent = info + " Datos técnicos: " + textoDiagnostico();
 }
 
 /* Si la brújula responde tarde, la activamos sin que tengas que tocar nada */
@@ -734,7 +917,6 @@ function esperarBrujulaTarde() {
   esperaTarde = setInterval(() => {
     if (estado.rumbo !== null) {
       clearInterval(esperaTarde);
-      $("#diagnostico").hidden = true;
       marcarListo();
     } else if (performance.now() > limite) {
       clearInterval(esperaTarde);
@@ -742,20 +924,21 @@ function esperarBrujulaTarde() {
   }, 300);
 }
 
-/* Mensaje según lo que falló */
+/* Mensaje según lo que falló: corto, amable y sin pedir configuraciones */
 function mensajeSinBrujula() {
-  const ua = navigator.userAgent;
-  const permisos = diag.permiso.split("/");
-  if (permisos.includes("denied") || /NotAllowed/.test(diag.sensor)) {
-    return "El navegador tiene bloqueados los sensores de movimiento. Para arreglarlo, toca los tres puntos de Chrome, luego Configuración, Configuración de sitios, Sensores de movimiento, y elige Permitir. Después recarga la página y toca Empezar.";
+  const sigue = " Puedes hacer los Experimentos con imanes y el modo Aprender.";
+  if (/; wv\)/.test(navigator.userAgent)) {
+    return "Para usar la brújula, abre este enlace en Chrome." + sigue;
   }
-  if (/; wv\)/.test(ua)) {
-    return "Abriste la app dentro de otra aplicación, y ahí la brújula no funciona. Abre el enlace directamente en Chrome y toca Empezar.";
+  if (diag.iosInvalido > 0) {
+    return "La brújula se está preparando. Mueve el celular despacio, como dibujando un ocho en el aire. Te aviso cuando esté lista.";
   }
-  if (diag.abs + diag.rel === 0 && !/funciona/.test(diag.sensor)) {
-    return "El navegador no me envía datos de los sensores. Prueba abrir el enlace en Chrome. Si ya estás en Chrome, revisa en Configuración de sitios que los Sensores de movimiento estén permitidos.";
+  if (diag.absNulos > 0 || diag.relNulos > 0) {
+    // Chrome envía un evento vacío cuando el celular no tiene brújula
+    estado.tieneBrujula = false;
+    return "Este celular no tiene brújula. No pasa nada." + sigue;
   }
-  return "No encuentro la brújula de tu celular. Mueve el celular en forma de ocho durante unos segundos. Si la brújula aparece, te aviso. Si no, toca Empezar otra vez.";
+  return "No pude activar la brújula." + sigue + " Si quieres, toca Empezar otra vez.";
 }
 
 /* Nota: no vigilamos si "dejan de llegar" lecturas. Chrome en Android solo
@@ -909,16 +1092,12 @@ async function calibrar() {
    ========================================================= */
 const INSTRUCCIONES = {
   brujula: "Modo brújula. Sostén el celular de pie, frente a ti, y gira despacio. El tono sube cuando te acercas al norte. En el norte suena una campanita.",
-  detector: "Modo detector de imanes. Pon el celular quieto sobre la mesa y toca Calibrar.",
+  detector: "Modo detector de imanes. Pon el celular quieto sobre la mesa y toca Calibrar. Luego acerca el imán despacio, por un lado del celular.",
+  experimentos: "Experimentos con imanes. Elige un experimento. Yo te guío paso a paso.",
   aprender: "Modo aprender. Toca una pregunta para escuchar la respuesta.",
   ayuda: "Ayuda y cuidados.",
   inicio: "Inicio."
 };
-
-function esIPhone() {
-  return /iPhone|iPad|iPod/.test(navigator.userAgent) ||
-    (/Macintosh/.test(navigator.userAgent) && navigator.maxTouchPoints > 1);
-}
 
 function instruccionesDe(nombre) {
   let t = INSTRUCCIONES[nombre];
@@ -940,6 +1119,7 @@ function actualizarAvisoSensor() {
 }
 
 async function irA(nombre) {
+  detenerEspera();
   if (nombre === "brujula" || nombre === "detector") {
     // Empezar se activa solo si hace falta (el toque cuenta como permiso)
     empezar();
@@ -960,21 +1140,18 @@ async function irA(nombre) {
     $("#d-estado").textContent = "Sin calibrar";
   }
   // Dejamos que el lector lea el título y luego damos la instrucción
+  if (nombre === "experimento") return;   // el experimento anuncia su propia introducción
   setTimeout(() => anunciar(instruccionesDe(nombre), { interrumpir: false }), estado.vozApp ? 100 : 900);
 }
 
 $$("[data-ir]").forEach((b) => b.addEventListener("click", () => irA(b.dataset.ir)));
 $("#btn-empezar").addEventListener("click", () => {
   if (estado.empezado) { iniciarAudio(); anunciar("La brújula ya está activa. Elige un modo."); return; }
+  if (estado.tieneBrujula === false) { iniciarAudio(); anunciar("Este celular no tiene brújula. Puedes hacer los Experimentos con imanes y el modo Aprender."); return; }
   empezar();
 });
 
-$("#btn-donde").addEventListener("click", async () => {
-  const ok = await empezar();
-  if (!ok) return;
-  const r = Math.round(estado.rumbo) % 360;
-  anunciar("Miras al " + direccionEnPalabras(estado.rumbo) + ". " + r + " grados.");
-});
+$("#btn-donde").addEventListener("click", () => decirDireccion());
 
 $("#btn-calibrar").addEventListener("click", calibrar);
 $("#btn-cuanto").addEventListener("click", () => {
@@ -1058,8 +1235,162 @@ $("#btn-leer-ayuda").addEventListener("click", () => {
 });
 
 /* =========================================================
+   EXPERIMENTOS: motor paso a paso
+   ========================================================= */
+const exp = { def: null, paso: -1, contador: 0, medidas: [] };
+let esperaTimer = null, esperaTic = null;
+
+function detenerEspera() {
+  clearTimeout(esperaTimer); clearInterval(esperaTic);
+  esperaTimer = esperaTic = null;
+}
+
+function ticSuave() {
+  if (!ctx || estado.pausado) return;
+  const t = ctx.currentTime, o = ctx.createOscillator(), g = ctx.createGain();
+  o.type = "sine"; o.frequency.value = 660;
+  g.gain.setValueAtTime(0.0001, t);
+  g.gain.exponentialRampToValueAtTime(0.08, t + 0.01);
+  g.gain.exponentialRampToValueAtTime(0.0001, t + 0.12);
+  o.connect(g).connect(maestro); o.start(t); o.stop(t + 0.15);
+}
+
+function abrirExperimento(id) {
+  iniciarAudio();
+  exp.def = EXPERIMENTOS.find((e) => e.id === id);
+  exp.paso = -1; exp.contador = 0; exp.medidas = [];
+  $("#h-experimento").textContent = exp.def.titulo;
+  const ul = $("#exp-materiales"); ul.textContent = "";
+  exp.def.necesitas.forEach((m) => { const li = document.createElement("li"); li.textContent = m; ul.appendChild(li); });
+  $("#exp-profe").textContent = exp.def.profe;
+  irA("experimento");
+  mostrarPaso(-1);
+}
+
+function totalPasos() { return exp.def.pasos.length + 1; }   // pasos + cierre
+
+function textoPaso(i) {
+  const d = exp.def;
+  if (i < 0) return d.titulo + ". Necesitas: " + d.necesitas.join(". ") + ". Cuando tengas todo, toca Siguiente paso.";
+  if (i >= d.pasos.length) return "Paso " + totalPasos() + " de " + totalPasos() + ". Para terminar. " + d.cierre + " Terminaste. Toca Terminar para elegir otro experimento.";
+  const p = d.pasos[i];
+  const t = (estado.tieneBrujula === false && p.tSin) ? p.tSin : p.t;
+  return "Paso " + (i + 1) + " de " + totalPasos() + ". " + t;
+}
+
+function crearBoton(texto, alTocar, clase) {
+  const b = document.createElement("button");
+  b.type = "button"; b.textContent = texto;
+  if (clase) b.className = clase;
+  b.addEventListener("click", alTocar);
+  $("#exp-extra").appendChild(b);
+  return b;
+}
+
+function mostrarPaso(i) {
+  detenerEspera();
+  exp.paso = i;
+  const texto = textoPaso(i);
+  $("#exp-paso").textContent = texto;
+  $("#exp-extra").textContent = "";
+  $("#btn-anterior").disabled = i < 0;
+  $("#btn-siguiente").textContent = i >= exp.def.pasos.length ? "Terminar" : (i < 0 ? "Empezar el experimento" : "Siguiente paso");
+  const p = (i >= 0 && i < exp.def.pasos.length) ? exp.def.pasos[i] : null;
+  if (p && p.brujula && estado.tieneBrujula !== false) {
+    crearBoton("¿Hacia dónde miro?", decirDireccion);
+  }
+  if (p && p.contar) {
+    const previa = exp.medidas.find((m) => m.etiqueta === p.contar);
+    exp.contador = previa ? previa.n : 0;
+    const visor = document.createElement("p");
+    visor.className = "contador"; visor.id = "exp-contador"; visor.setAttribute("aria-hidden", "true");
+    visor.textContent = exp.contador + " clips";
+    $("#exp-extra").appendChild(visor);
+    const fila = document.createElement("div"); fila.className = "fila";
+    $("#exp-extra").appendChild(fila);
+    const mas = crearBoton("Uno más", () => cambiarContador(1)); fila.appendChild(mas);
+    const menos = crearBoton("Uno menos", () => cambiarContador(-1)); fila.appendChild(menos);
+    crearBoton("Guardar medida", () => guardarMedida(p.contar));
+  }
+  if (p && p.grafica) crearBoton("Escuchar mi gráfica", escucharGrafica);
+  anunciar(texto);
+  if (p && p.esperar) iniciarEspera(p.esperar);
+}
+
+function iniciarEspera(segundos) {
+  // Un tic suave cada 3 segundos para que sepa que la app sigue contando
+  esperaTic = setInterval(ticSuave, 3000);
+  esperaTimer = setTimeout(() => {
+    detenerEspera();
+    vibrar([80, 80, 80]);
+    campanita();
+    anunciar("Listo. Ya puedes tocar. Luego toca Siguiente paso.", { urgente: true });
+  }, segundos * 1000);
+}
+
+function cambiarContador(paso) {
+  exp.contador = Math.max(0, Math.min(99, exp.contador + paso));
+  const v = $("#exp-contador"); if (v) v.textContent = exp.contador + " clips";
+  anunciar(exp.contador === 1 ? "1 clip" : exp.contador + " clips");
+}
+
+function guardarMedida(etiqueta) {
+  const previa = exp.medidas.find((m) => m.etiqueta === etiqueta);
+  if (previa) previa.n = exp.contador; else exp.medidas.push({ etiqueta, n: exp.contador });
+  anunciar("Guardado: " + etiqueta + ", " + exp.contador + (exp.contador === 1 ? " clip" : " clips") + ". Toca Siguiente paso.");
+}
+
+function escucharGrafica() {
+  iniciarAudio();
+  if (!exp.medidas.length) { anunciar("Todavía no guardaste medidas. Vuelve a los pasos anteriores."); return; }
+  callar();
+  const max = Math.max(1, ...exp.medidas.map((m) => m.n));
+  const t0 = ctx ? ctx.currentTime + 0.1 : 0;
+  exp.medidas.forEach((m, k) => {
+    if (!ctx) return;
+    const t = t0 + k * 0.6, o = ctx.createOscillator(), g = ctx.createGain();
+    o.type = "sine"; o.frequency.value = 300 + 600 * (m.n / max);   // más clips, tono más alto
+    g.gain.setValueAtTime(0.0001, t);
+    g.gain.exponentialRampToValueAtTime(0.25, t + 0.02);
+    g.gain.setValueAtTime(0.25, t + 0.38);
+    g.gain.exponentialRampToValueAtTime(0.0001, t + 0.45);
+    o.connect(g).connect(maestro); o.start(t); o.stop(t + 0.5);
+  });
+  const tabla = exp.medidas.map((m) => m.etiqueta + ": " + m.n + (m.n === 1 ? " clip" : " clips")).join(". ");
+  $("#mensaje-texto").textContent = tabla;
+  setTimeout(() => anunciar("Tus medidas. " + tabla + "."), exp.medidas.length * 600 + 300);
+}
+
+async function decirDireccion() {
+  const ok = await empezar();
+  if (!ok || estado.rumbo === null) return;
+  const r = Math.round(estado.rumbo) % 360;
+  anunciar("Miras al " + direccionEnPalabras(estado.rumbo) + ". " + r + " grados.");
+}
+
+$("#btn-siguiente").addEventListener("click", () => {
+  iniciarAudio();
+  if (!exp.def) return;
+  if (exp.paso >= exp.def.pasos.length) { irA("experimentos"); return; }
+  mostrarPaso(exp.paso + 1);
+});
+$("#btn-anterior").addEventListener("click", () => { if (exp.def && exp.paso >= 0) mostrarPaso(exp.paso - 1); });
+$("#btn-repetir").addEventListener("click", () => { if (exp.def) anunciar(textoPaso(exp.paso)); });
+
+const listaExp = $("#lista-experimentos");
+EXPERIMENTOS.forEach((e) => {
+  const b = document.createElement("button");
+  b.type = "button"; b.textContent = e.titulo;
+  b.addEventListener("click", () => abrirExperimento(e.id));
+  listaExp.appendChild(b);
+});
+
+/* =========================================================
    10. FUNCIONAR SIN INTERNET
    ========================================================= */
+actualizarMenu();
+window.addEventListener("load", () => { try { $("#btn-empezar").focus(); } catch (e) {} });
+
 if ("serviceWorker" in navigator) {
   window.addEventListener("load", () => {
     navigator.serviceWorker.register("sw.js").catch(() => {});
