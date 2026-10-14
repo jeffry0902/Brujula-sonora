@@ -99,6 +99,8 @@
   }
   .contador { font-size: 2rem; font-weight: 800; color: var(--acento); text-align: center; margin: 8px 0; }
   #exp-paso { font-size: 1.3rem; padding: 12px 16px; }
+  .tarjeta-audio { border: 3px solid var(--borde); border-radius: 14px; padding: 4px 14px 8px; margin: 14px 0; }
+  .tarjeta-audio h4 { font-size: 1.25rem; margin: 10px 0 4px; color: var(--acento); }
   [hidden] { display: none !important; }
   @media (prefers-reduced-motion: reduce) { button:active { transform: none; } }
 </style>
@@ -120,13 +122,12 @@
   <!-- ============ INICIO ============ -->
   <section id="pantalla-inicio" aria-labelledby="h-inicio">
     <h2 id="h-inicio" tabindex="-1">Inicio</h2>
-    <p>Hola. Con esta app vas a escuchar el campo magnético de la Tierra y a hacer experimentos con imanes.</p>
+    <p>Hola. Con esta app vas a escuchar el campo magnético de la Tierra y a aprender sobre imanes.</p>
     <p>Toca <strong>Empezar</strong>. Si aparece un mensaje, elige Permitir.</p>
     <button id="btn-empezar" class="grande" type="button">Empezar</button>
     <h3 id="h-modos">Elige un modo</h3>
     <div role="group" aria-labelledby="h-modos">
       <button type="button" id="btn-modo-brujula" data-ir="brujula">Modo Brújula</button>
-      <button type="button" id="btn-modo-experimentos" data-ir="experimentos">Experimentos con imanes</button>
       <button type="button" id="btn-modo-detector" data-ir="detector" hidden>Modo Detector de imanes</button>
       <button type="button" data-ir="aprender">Modo Aprender</button>
       <button type="button" data-ir="ayuda" class="secundario">Ayuda y cuidados</button>
@@ -198,6 +199,80 @@
   <!-- ============ APRENDER ============ -->
   <section id="pantalla-aprender" aria-labelledby="h-aprender" hidden>
     <h2 id="h-aprender" tabindex="-1">Modo Aprender</h2>
+    <h3 id="h-audios">Carros eléctricos: el motor que no hace ruido</h3>
+    <p>Tres audios cortos. Escúchalos en orden. Puedes repetirlos las veces que quieras.</p>
+    <div role="group" aria-labelledby="h-audios">
+      <article class="tarjeta-audio" aria-labelledby="t-audio1" data-n="1" data-src="audios/audio1-motor.mp3" data-titulo="Parte 1: El secreto del motor eléctrico">
+        <h4 id="t-audio1">Parte 1: El secreto del motor eléctrico</h4>
+        <p>Duración: 3 minutos 18 segundos.</p>
+        <p class="pos-audio" id="pos-audio1"></p>
+        <button type="button" class="grande btn-play" aria-label="Reproducir Parte 1: El secreto del motor eléctrico">Reproducir</button>
+        <button type="button" class="secundario btn-inicio-audio" hidden>Empezar de nuevo</button>
+        <div class="fila">
+          <button type="button" class="secundario btn-atras">Atrasar 10 segundos</button>
+          <button type="button" class="secundario btn-adelante">Adelantar 10 segundos</button>
+        </div>
+        <button type="button" class="secundario btn-velocidad">Velocidad: normal</button>
+        <button type="button" class="secundario btn-texto" aria-expanded="false" aria-controls="texto-audio1">Leer el texto</button>
+        <div id="texto-audio1" class="explicacion" hidden>
+          <p>Hola, Danna. Bienvenida a la primera parte de esta historia sobre los carros eléctricos. Antes de hablar de carros, quiero que recuerdes lo que sentiste con tus dos imanes: cuando los acercas por un lado se jalan con fuerza, y cuando volteas uno, se empujan, como si entre ellos hubiera un resorte invisible. Guarda esa sensación, porque todo lo que vamos a contar hoy funciona gracias a esa fuerza.</p>
+          <p>En el año mil ochocientos veinte, un profesor danés llamado Hans Christian Oersted estaba dando una clase. Sobre la mesa tenía una pila, unos cables y una brújula. Cuando conectó el cable a la pila y la corriente empezó a pasar, notó que la aguja de la brújula se movía sola. Desconectó el cable y la aguja volvió a su lugar. Lo repitió muchas veces, y siempre pasaba lo mismo.</p>
+          <p>Así descubrió algo que cambió el mundo: cuando la corriente eléctrica pasa por un cable, el cable se convierte en un imán. Y si enrollamos el cable muchas veces, formando una bobina, ese imán se vuelve mucho más fuerte. A esto lo llamamos electroimán. Lo más interesante es que es un imán que se puede prender y apagar: con corriente es imán, y sin corriente deja de serlo. Y si cambiamos el sentido de la corriente, sus polos se intercambian: donde estaba el norte, ahora queda el sur.</p>
+          <p>Ahora sí, el motor. Imagina un tubo. Pegados por dentro de sus paredes hay imanes fijos, que no se mueven. En el centro, atravesada por un eje, hay una bobina que puede girar libremente. Cuando le llega corriente, la bobina se vuelve un electroimán, y sus polos sienten a los imanes de las paredes: los polos distintos la atraen y los polos iguales la empujan. Entonces la bobina gira, buscando acomodarse donde los polos distintos queden juntos.</p>
+          <p>Pero justo antes de que lo logre, una pieza llamada conmutador invierte la corriente. Los polos de la bobina se intercambian, y lo que antes la atraía ahora la empuja, así que sigue girando para buscar su nueva posición. Y otra vez, antes de llegar, la corriente se invierte. Es como un burro que persigue una zanahoria amarrada a un palo delante de su cabeza: camina y camina, pero nunca la alcanza. Así, la bobina da vueltas sin parar, cientos o miles de veces por minuto.</p>
+          <p>Eso es un motor eléctrico: corriente más imanes es igual a movimiento. Está dentro del ventilador, de la licuadora, de la lavadora y hasta del vibrador de tu celular.</p>
+          <p>Y aquí va algo que puedes comprobar tú misma. Si tienes un juguete o un ventiladorcito de pilas, pon las pilas al revés. La corriente circulará en sentido contrario, los polos de la bobina se intercambiarán y el motor girará hacia el otro lado. Con un ventiladorcito lo vas a sentir en la cara: el aire ya no te llegará como antes, porque las aspas ahora lo empujan hacia atrás.</p>
+          <p>En el siguiente audio vamos a ver qué pasa cuando ese motor se pone dentro de un carro.</p>
+        </div>
+      </article>
+      <article class="tarjeta-audio" aria-labelledby="t-audio2" data-n="2" data-src="audios/audio2-silencio.mp3" data-titulo="Parte 2: El motor que no hace ruido">
+        <h4 id="t-audio2">Parte 2: El motor que no hace ruido</h4>
+        <p>Duración: 2 minutos 50 segundos.</p>
+        <p class="pos-audio" id="pos-audio2"></p>
+        <button type="button" class="grande btn-play" aria-label="Reproducir Parte 2: El motor que no hace ruido">Reproducir</button>
+        <button type="button" class="secundario btn-inicio-audio" hidden>Empezar de nuevo</button>
+        <div class="fila">
+          <button type="button" class="secundario btn-atras">Atrasar 10 segundos</button>
+          <button type="button" class="secundario btn-adelante">Adelantar 10 segundos</button>
+        </div>
+        <button type="button" class="secundario btn-velocidad">Velocidad: normal</button>
+        <button type="button" class="secundario btn-texto" aria-expanded="false" aria-controls="texto-audio2">Leer el texto</button>
+        <div id="texto-audio2" class="explicacion" hidden>
+          <p>Hola otra vez, Danna. Piensa en el sonido de una moto o de un carro de gasolina cuando arranca a tu lado: ese rugido, esa vibración que a veces se siente hasta en el pecho, y el olor del humo. Todo eso viene de su motor.</p>
+          <p>Un motor de gasolina funciona con explosiones. Dentro de unos cilindros de metal se mezcla gasolina con aire, una chispa la enciende y se produce una pequeña explosión que empuja una pieza llamada pistón. Ese empujón es el que termina haciendo girar las ruedas. Y no es una sola explosión: son miles por minuto. Cada una produce un golpe de sonido, y todos juntos forman el rugido que conoces. Además, al quemar gasolina se producen gases que salen por el tubo de escape: ese es el humo.</p>
+          <p>El carro eléctrico es completamente distinto. No tiene gasolina ni explosiones. Tiene una batería grande, parecida a la de tu celular pero muchísimo más grande, y uno o varios motores eléctricos como el que te expliqué en el audio anterior: imanes y bobinas que giran sin chocar contra nada. Por eso casi no hace ruido, no vibra y no echa humo. Cuando un carro eléctrico pasa despacio, lo único que se escucha es el roce de las llantas contra el pavimento y, a veces, un zumbido muy suave.</p>
+          <p>Y tiene un truco muy ingenioso. Recuerda que en un motor, corriente más imanes producen movimiento. Pues el científico inglés Michael Faraday descubrió que también funciona al revés: si haces girar una bobina entre imanes, se produce corriente eléctrica. Así trabaja un generador, y así se produce gran parte de la electricidad que llega a tu casa: en las represas, el agua hace girar enormes bobinas entre imanes.</p>
+          <p>Los carros eléctricos aprovechan esa idea. Cuando el conductor frena, las ruedas siguen girando por el impulso, y en lugar de desperdiciar ese movimiento, el motor se convierte en generador y produce electricidad que vuelve a cargar la batería. A esto se le llama frenado regenerativo. Es como si, cada vez que bajas una loma en bicicleta, pudieras guardar esa energía para subir la siguiente.</p>
+          <p>Los vehículos eléctricos están llegando cada vez más a Colombia: carros, motos, bicicletas y patinetas. El país incluso tiene una ley que los promueve con beneficios para sus dueños. Contaminan menos el aire de las ciudades y son mucho más silenciosos.</p>
+          <p>Pero ese silencio, que parece una gran ventaja, trajo un problema que muy pocos imaginaron al principio. De eso se trata el último audio.</p>
+        </div>
+      </article>
+      <article class="tarjeta-audio" aria-labelledby="t-audio3" data-n="3" data-src="audios/audio3-avas.mp3" data-titulo="Parte 3: El silencio que se volvió un peligro">
+        <h4 id="t-audio3">Parte 3: El silencio que se volvió un peligro</h4>
+        <p>Duración: 3 minutos 23 segundos.</p>
+        <p class="pos-audio" id="pos-audio3"></p>
+        <button type="button" class="grande btn-play" aria-label="Reproducir Parte 3: El silencio que se volvió un peligro">Reproducir</button>
+        <button type="button" class="secundario btn-inicio-audio" hidden>Empezar de nuevo</button>
+        <div class="fila">
+          <button type="button" class="secundario btn-atras">Atrasar 10 segundos</button>
+          <button type="button" class="secundario btn-adelante">Adelantar 10 segundos</button>
+        </div>
+        <button type="button" class="secundario btn-velocidad">Velocidad: normal</button>
+        <button type="button" class="secundario btn-texto" aria-expanded="false" aria-controls="texto-audio3">Leer el texto</button>
+        <div id="texto-audio3" class="explicacion" hidden>
+          <p>Danna, esta parte tiene mucho que ver contigo. Cuando caminas por la calle o cruzas una esquina, tus oídos trabajan sin descanso: escuchas de dónde viene una moto, si se acerca o se aleja, si está frenando o acelerando. Para una persona con discapacidad visual, el sonido de los vehículos es información de seguridad.</p>
+          <p>Ahora imagina un carro eléctrico que sale despacio de un parqueadero o que llega a una esquina a baja velocidad. Casi no hace ruido. Una persona que se guía por el oído puede no darse cuenta de que está ahí. Y no solo ella: también los niños que juegan cerca de la calle, los ciclistas o cualquier persona que camina distraída con audífonos.</p>
+          <p>A baja velocidad el problema es mayor. Cuando un carro va rápido, el roce de las llantas y del aire produce suficiente ruido para escucharlo. Pero cuando va despacio, a menos de unos veinte kilómetros por hora, que es justo la velocidad de los parqueaderos, los barrios y las esquinas, un carro eléctrico es prácticamente silencioso.</p>
+          <p>Las organizaciones de personas ciegas de varios países alzaron la voz y pidieron una solución. Y fueron escuchadas. Hoy, en Europa, una norma obliga a todos los carros eléctricos e híbridos nuevos a tener un sistema llamado AVAS, que significa sistema de aviso acústico para vehículos. Es un parlante que produce un sonido artificial, parecido al zumbido suave de un motor, para que los peatones sepan que el vehículo se acerca.</p>
+          <p>¿Cómo funciona? Suena desde que el carro arranca hasta que llega a unos veinte kilómetros por hora. Además, el sonido cambia con la velocidad: se vuelve más agudo cuando el carro acelera, para que el peatón sepa si se acerca rápido o despacio. En reversa produce un sonido distinto, para avisar hacia dónde se mueve. Su volumen es parecido al de una conversación normal: lo bastante fuerte para escucharlo, pero sin volverse una molestia. Y deja de sonar por encima de los veinte kilómetros por hora porque, a esa velocidad, las llantas ya hacen suficiente ruido para que el carro se escuche solo.</p>
+          <p>Estados Unidos tiene una norma parecida, y muchos de los carros eléctricos que se venden en Colombia se fabrican para esos mercados, así que ya traen este sistema.</p>
+          <p>Fíjate en todo lo que se junta en esta historia. El magnetismo que sentiste en tus manos permitió crear motores silenciosos. Esos motores ayudan a cuidar el aire que respiramos. Pero su silencio se volvió un peligro, y la física del sonido, la misma que estudiaste en el segundo periodo, ayudó a resolverlo. Y todo cambió porque personas con discapacidad visual explicaron algo que solo ellas podían notar.</p>
+          <p>Por eso tu experiencia vale. Tú sabes cosas sobre los sonidos de la calle que la mayoría de las personas nunca nota. Guárdalas para tu pódcast.</p>
+          <p>Ahora sí, cuando quieras, responde las preguntas de la actividad. Puedes escuchar estos audios todas las veces que necesites. Y si tienes alguna duda, mándame un audio por WhatsApp. Un abrazo.</p>
+        </div>
+      </article>
+    </div>
+    <h3>Explicaciones cortas</h3>
     <p>Toca una pregunta. La app te lee la respuesta. El texto aparece debajo del botón.</p>
     <div id="lista-temas"></div>
     <button id="btn-callar" type="button" class="secundario">Detener lectura</button>
@@ -490,7 +565,8 @@ function callar() {
  */
 function anunciar(texto, { urgente = false, interrumpir = true } = {}) {
   $("#mensaje-texto").textContent = texto;
-  if (estado.vozApp && hablar(texto, interrumpir)) return;
+  // Mientras suena un audio de la guía, la voz de la app calla (solo el lector de pantalla avisa)
+  if (estado.vozApp && !audioSonando() && hablar(texto, interrumpir)) return;
   const region = urgente ? $("#vivo-urgente") : $("#vivo-cortes");
   region.textContent = "";
   // Pequeña pausa para que el lector note el cambio aunque el texto se repita.
@@ -590,7 +666,7 @@ function clic(nivel) {
 function actualizarTono() {
   if (!ctx || !tonoGain) return;
   const t = ctx.currentTime;
-  const activo = estado.pantalla === "brujula" && !estado.pausado && estado.rumbo !== null;
+  const activo = estado.pantalla === "brujula" && !estado.pausado && estado.rumbo !== null && !audioSonando();
   if (!activo) { tonoGain.gain.setTargetAtTime(0, t, 0.08); return; }
   const lejos = distanciaAngular(estado.rumbo, 0);          // 0 a 180
   const cerca = 1 - lejos / 180;                               // 1 = norte
@@ -820,8 +896,8 @@ function empezar() {
       try { respuesta = await permisoIOS; } catch (e) { respuesta = "denied"; }
       if (respuesta !== "granted") {
         anunciar(esIPhone()
-          ? "La brújula necesita tu permiso. Cierra Safari, ábrelo otra vez y toca Empezar. Cuando aparezca el mensaje, elige Permitir. Mientras tanto, puedes hacer los Experimentos con imanes."
-          : "La brújula necesita tu permiso. Toca Empezar otra vez y elige Permitir. Mientras tanto, puedes hacer los Experimentos con imanes.",
+          ? "La brújula necesita tu permiso. Cierra Safari, ábrelo otra vez y toca Empezar. Cuando aparezca el mensaje, elige Permitir. Mientras tanto, puedes usar el modo Aprender."
+          : "La brújula necesita tu permiso. Toca Empezar otra vez y elige Permitir. Mientras tanto, puedes usar el modo Aprender.",
           { urgente: true });
         return false;
       }
@@ -886,6 +962,7 @@ function tieneGiroscopio() { return diag.relSinAbsoluta > 0 || diag.giroSi > 0; 
 function sinGiroscopio() { return !tieneGiroscopio() && (diag.relConAbsoluta > 0 || diag.giroNo > 0); }
 
 function evaluarDetector() {
+  return false;   // Detector desactivado: en la mayoría de celulares el navegador no deja medir imanes
   if (estado.magOK) return true;                     // magnetómetro directo en µT
   if (esIPhone() || estado.rumbo === null) return false;
   return sinGiroscopio();
@@ -898,11 +975,9 @@ function actualizarMenu() {
   // Información para quien ayuda (en Ayuda y cuidados)
   let info;
   if (estado.tieneBrujula === false) {
-    info = "Brújula: este celular no la tiene. Detector de imanes: no disponible. Los Experimentos con imanes y el modo Aprender sí funcionan.";
+    info = "Brújula: este celular no la tiene. El modo Aprender sí funciona.";
   } else if (estado.tieneBrujula) {
-    info = "Brújula: sí. Detector de imanes: " + (estado.detectorDisponible
-      ? "sí, disponible en el menú."
-      : "no disponible en este celular, porque su navegador no deja medir imanes. Los Experimentos con imanes cubren el mismo tema.");
+    info = "Brújula: sí.";
   } else {
     info = "Toca Empezar en el inicio para revisar este celular.";
   }
@@ -926,7 +1001,7 @@ function esperarBrujulaTarde() {
 
 /* Mensaje según lo que falló: corto, amable y sin pedir configuraciones */
 function mensajeSinBrujula() {
-  const sigue = " Puedes hacer los Experimentos con imanes y el modo Aprender.";
+  const sigue = " Puedes usar el modo Aprender.";
   if (/; wv\)/.test(navigator.userAgent)) {
     return "Para usar la brújula, abre este enlace en Chrome." + sigue;
   }
@@ -1147,7 +1222,7 @@ async function irA(nombre) {
 $$("[data-ir]").forEach((b) => b.addEventListener("click", () => irA(b.dataset.ir)));
 $("#btn-empezar").addEventListener("click", () => {
   if (estado.empezado) { iniciarAudio(); anunciar("La brújula ya está activa. Elige un modo."); return; }
-  if (estado.tieneBrujula === false) { iniciarAudio(); anunciar("Este celular no tiene brújula. Puedes hacer los Experimentos con imanes y el modo Aprender."); return; }
+  if (estado.tieneBrujula === false) { iniciarAudio(); anunciar("Este celular no tiene brújula. Puedes usar el modo Aprender."); return; }
   empezar();
 });
 
@@ -1383,6 +1458,93 @@ EXPERIMENTOS.forEach((e) => {
   b.type = "button"; b.textContent = e.titulo;
   b.addEventListener("click", () => abrirExperimento(e.id));
   listaExp.appendChild(b);
+});
+
+/* =========================================================
+   AUDIOS DE LA GUÍA (modo Aprender)
+   ========================================================= */
+let audioActivo = null;   // el <audio> que está sonando
+function audioSonando() { return !!(audioActivo && !audioActivo.paused); }
+
+const VELOCIDADES = [{ v: 1, n: "normal" }, { v: 0.85, n: "lenta" }, { v: 1.2, n: "rápida" }];
+function minSeg(t) { t = Math.max(0, Math.floor(t || 0)); return Math.floor(t / 60) + " minutos " + (t % 60) + " segundos"; }
+
+$$(".tarjeta-audio").forEach((tarjeta) => {
+  const n = tarjeta.dataset.n, titulo = tarjeta.dataset.titulo, clave = "bs-audio-" + n;
+  const audio = new Audio();
+  audio.preload = "none";
+  audio.src = tarjeta.dataset.src;
+  let vel = 0, posGuardada = 0;
+  try { posGuardada = parseFloat(localStorage.getItem(clave)) || 0; } catch (e) {}
+  const play = tarjeta.querySelector(".btn-play"), deNuevo = tarjeta.querySelector(".btn-inicio-audio");
+  const pos = tarjeta.querySelector(".pos-audio");
+
+  function pintar() {
+    const sonando = !audio.paused;
+    const continuar = !sonando && posGuardada > 3;
+    play.textContent = sonando ? "Pausar" : (continuar ? "Continuar donde quedaste" : "Reproducir");
+    play.setAttribute("aria-label", (sonando ? "Pausar " : (continuar ? "Continuar donde quedaste: " : "Reproducir ")) + titulo);
+    deNuevo.hidden = !(continuar || sonando);
+    pos.textContent = posGuardada > 3 ? "Quedaste en el minuto " + Math.floor(posGuardada / 60) + " con " + Math.floor(posGuardada % 60) + " segundos." : "";
+  }
+  function guardar(t) { posGuardada = t; try { localStorage.setItem(clave, String(t)); } catch (e) {} }
+
+  async function reproducir(desde) {
+    if (audioActivo && audioActivo !== audio) audioActivo.pause();   // solo un audio a la vez
+    audioActivo = audio;
+    callar();
+    if (typeof desde === "number") { try { audio.currentTime = desde; } catch (e) {} }
+    else if (posGuardada > 3 && audio.currentTime < 1) {
+      const ir = () => { try { audio.currentTime = posGuardada; } catch (e) {} };
+      if (audio.readyState >= 1) ir(); else audio.addEventListener("loadedmetadata", ir, { once: true });
+    }
+    audio.playbackRate = VELOCIDADES[vel].v;
+    try { await audio.play(); }
+    catch (e) { anunciar("No pude cargar el audio. Revisa la conexión a internet e intenta otra vez."); }
+    pintar();
+  }
+
+  play.addEventListener("click", () => {
+    iniciarAudio();
+    if (audio.paused) reproducir(); else { audio.pause(); anunciar("Pausado."); }
+  });
+  deNuevo.addEventListener("click", () => { guardar(0); reproducir(0); });
+  tarjeta.querySelector(".btn-atras").addEventListener("click", () => {
+    audio.currentTime = Math.max(0, audio.currentTime - 10); guardar(audio.currentTime);
+    if (audio.paused) anunciar("Atrasado 10 segundos."); pintar();
+  });
+  tarjeta.querySelector(".btn-adelante").addEventListener("click", () => {
+    const fin = isFinite(audio.duration) ? audio.duration - 1 : audio.currentTime + 10;
+    audio.currentTime = Math.min(fin, audio.currentTime + 10); guardar(audio.currentTime);
+    if (audio.paused) anunciar("Adelantado 10 segundos."); pintar();
+  });
+  const bVel = tarjeta.querySelector(".btn-velocidad");
+  bVel.addEventListener("click", () => {
+    vel = (vel + 1) % VELOCIDADES.length;
+    audio.playbackRate = VELOCIDADES[vel].v;
+    bVel.textContent = "Velocidad: " + VELOCIDADES[vel].n;
+    anunciar("Velocidad " + VELOCIDADES[vel].n + ".");
+  });
+  const bTexto = tarjeta.querySelector(".btn-texto"), texto = tarjeta.querySelector(".explicacion");
+  bTexto.addEventListener("click", () => {
+    texto.hidden = !texto.hidden;
+    bTexto.setAttribute("aria-expanded", texto.hidden ? "false" : "true");
+    bTexto.textContent = texto.hidden ? "Leer el texto" : "Ocultar el texto";
+    if (!texto.hidden) { texto.tabIndex = -1; texto.focus(); }
+  });
+
+  let ultimoGuardado = 0;
+  audio.addEventListener("timeupdate", () => {
+    if (Math.abs(audio.currentTime - ultimoGuardado) >= 2) { ultimoGuardado = audio.currentTime; guardar(audio.currentTime); }
+  });
+  audio.addEventListener("play", () => { callar(); pintar(); });
+  audio.addEventListener("pause", () => { if (!audio.ended) guardar(audio.currentTime); pintar(); });
+  audio.addEventListener("ended", () => {
+    guardar(0); pintar();
+    anunciar(n === "3" ? "Terminó la parte 3. Ya puedes responder las preguntas de la actividad."
+                       : "Terminó la parte " + n + ". Sigue la parte " + (Number(n) + 1) + ".");
+  });
+  pintar();
 });
 
 /* =========================================================

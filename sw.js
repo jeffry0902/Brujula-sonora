@@ -1,6 +1,6 @@
 // Service worker de Brújula Sonora: guarda la app para usarla sin internet.
-// Si cambias index.html, sube el número de VERSION para que los celulares se actualicen.
-const VERSION = "brujula-sonora-v7";
+// Si cambias index.html o los audios, sube el número de VERSION para que los celulares se actualicen.
+const VERSION = "brujula-sonora-v8";
 const ARCHIVOS = [
   "./",
   "./index.html",
@@ -8,7 +8,10 @@ const ARCHIVOS = [
   "./icons/icon-192.png",
   "./icons/icon-512.png",
   "./icons/icon-maskable-512.png",
-  "./icons/apple-touch-icon.png"
+  "./icons/apple-touch-icon.png",
+  "./audios/audio1-motor.mp3",
+  "./audios/audio2-silencio.mp3",
+  "./audios/audio3-avas.mp3"
 ];
 
 self.addEventListener("install", (e) => {
@@ -23,13 +26,36 @@ self.addEventListener("activate", (e) => {
   );
 });
 
-// Primero intenta internet (para recibir cambios); si no hay, usa lo guardado.
+// Audios: primero lo guardado. Si el reproductor pide un pedazo (Range), lo cortamos del archivo guardado.
+async function responderAudio(req) {
+  const guardado = await caches.match(req.url, { ignoreSearch: true });
+  if (!guardado) return fetch(req);
+  const rango = req.headers.get("range");
+  if (!rango) return guardado;
+  const datos = await guardado.arrayBuffer();
+  const m = /bytes=(\d*)-(\d*)/.exec(rango) || [];
+  const ini = m[1] ? parseInt(m[1], 10) : 0;
+  const fin = m[2] ? Math.min(parseInt(m[2], 10), datos.byteLength - 1) : datos.byteLength - 1;
+  return new Response(datos.slice(ini, fin + 1), {
+    status: 206,
+    headers: {
+      "Content-Type": "audio/mpeg",
+      "Content-Range": "bytes " + ini + "-" + fin + "/" + datos.byteLength,
+      "Content-Length": String(fin - ini + 1),
+      "Accept-Ranges": "bytes"
+    }
+  });
+}
+
+// Lo demás: primero internet (para recibir cambios); si no hay, lo guardado.
 self.addEventListener("fetch", (e) => {
-  if (e.request.method !== "GET" || new URL(e.request.url).origin !== location.origin) return;
+  const url = new URL(e.request.url);
+  if (e.request.method !== "GET" || url.origin !== location.origin) return;
+  if (url.pathname.endsWith(".mp3")) { e.respondWith(responderAudio(e.request)); return; }
   e.respondWith(
     fetch(e.request)
       .then((resp) => {
-        if (resp.ok) {
+        if (resp.status === 200) {
           const copia = resp.clone();
           caches.open(VERSION).then((c) => c.put(e.request, copia));
         }
