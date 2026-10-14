@@ -522,9 +522,8 @@ function nuevaLectura(rumbo, beta, gamma) {
   if (rumbo === null || isNaN(rumbo)) return;
   estado.rumboCrudo = rumbo;
   estado.inclinacion = { beta: beta || 0, gamma: gamma || 0 };
-  // Filtro suave que respeta el salto entre 359° y 0°
+  // El suavizado se hace en el bucle principal, con el tiempo (ver suavizar()).
   if (estado.rumbo === null) estado.rumbo = rumbo;
-  else estado.rumbo = normalizar(estado.rumbo + 0.2 * diferencia(rumbo, estado.rumbo));
   estado.ultimaLectura = performance.now();
 }
 
@@ -700,7 +699,6 @@ function empezar() {
   return empezando;
 }
 
-let vigilando = false;
 function marcarListo() {
   if (estado.empezado) return;
   estado.empezado = true;
@@ -709,7 +707,6 @@ function marcarListo() {
   anunciar("Listo. La brújula está activa." +
     (estado.magnetometro ? " También puedo medir la intensidad del campo." : "") +
     (enModo ? "" : " Ahora elige un modo."), { interrumpir: !enModo });
-  if (!vigilando) { vigilando = true; vigilarSensor(); }
 }
 
 /* Si la brújula responde tarde, la activamos sin que tengas que tocar nada */
@@ -744,19 +741,9 @@ function mensajeSinBrujula() {
   return "No encuentro la brújula de tu celular. Mueve el celular en forma de ocho durante unos segundos. Si la brújula aparece, te aviso. Si no, toca Empezar otra vez.";
 }
 
-/* Si el sensor deja de responder, avisamos */
-let avisoSensorDado = false;
-function vigilarSensor() {
-  setInterval(() => {
-    if (!estado.empezado || document.visibilityState !== "visible") return;
-    const quieto = performance.now() - estado.ultimaLectura > 5000;
-    if (quieto && !avisoSensorDado && (estado.pantalla === "brujula" || estado.pantalla === "detector")) {
-      avisoSensorDado = true;
-      anunciar("La brújula dejó de responder. Toca Volver al inicio y luego Empezar.", { urgente: true });
-    }
-    if (!quieto) avisoSensorDado = false;
-  }, 2000);
-}
+/* Nota: no vigilamos si "dejan de llegar" lecturas. Chrome en Android solo
+   envía una lectura cuando el valor cambia; con el celular quieto sobre la
+   mesa es normal que no lleguen datos nuevos, y la última lectura sigue valiendo. */
 
 /* =========================================================
    7. BUCLE PRINCIPAL (unas 20 veces por segundo)
@@ -768,7 +755,16 @@ function direccionEnPalabras(rumbo) {
   return PUNTOS[Math.round(rumbo / 45) % 8];
 }
 
+/* Filtro suave que respeta el salto entre 359° y 0°.
+   Va con el tiempo y no con cada lectura, porque Chrome manda lecturas
+   solo cuando algo cambia. */
+function suavizar() {
+  if (estado.rumbo === null || estado.rumboCrudo === null) return;
+  estado.rumbo = normalizar(estado.rumbo + 0.25 * diferencia(estado.rumboCrudo, estado.rumbo));
+}
+
 function bucle() {
+  suavizar();
   if (estado.rumbo !== null) {
     const r = Math.round(estado.rumbo) % 360;
     if (estado.pantalla === "brujula") {
