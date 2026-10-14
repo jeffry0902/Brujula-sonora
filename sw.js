@@ -1,6 +1,6 @@
 // Service worker de Brújula Sonora: guarda la app para usarla sin internet.
 // Si cambias index.html o los audios, sube el número de VERSION para que los celulares se actualicen.
-const VERSION = "brujula-sonora-v8";
+const VERSION = "brujula-sonora-v9";
 const ARCHIVOS = [
   "./",
   "./index.html",

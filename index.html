@@ -137,7 +137,7 @@
   <!-- ============ BRÚJULA ============ -->
   <section id="pantalla-brujula" aria-labelledby="h-brujula" hidden>
     <h2 id="h-brujula" tabindex="-1">Modo Brújula</h2>
-    <p>Sostén el celular de pie, frente a ti. Gira despacio. El tono sube cuando te acercas al norte. En el norte suena una campanita.</p>
+    <p>Sostén el celular de pie, frente a ti. Gira despacio. El tono sube cuando te acercas al norte. Al llegar al norte, al oriente, al sur o al occidente, suena una campanita y te digo el nombre.</p>
     <button id="btn-donde" class="grande" type="button">¿Hacia dónde miro?</button>
     <div class="lectura" aria-hidden="true">
       <span class="valor" id="b-direccion">—</span>
@@ -633,10 +633,10 @@ function aplicarVolumen() {
   if (maestro) maestro.gain.setTargetAtTime(VOLUMENES[estado.volumen], ctx.currentTime, 0.05);
 }
 
-function campanita() {
+function campanita(tono = 1) {
   if (!ctx || estado.pausado) return;
   const t = ctx.currentTime;
-  [[1318.5, 0.35], [2637, 0.12], [3951, 0.06]].forEach(([f, a]) => {
+  [[1318.5 * tono, 0.35], [2637 * tono, 0.12], [3951 * tono, 0.06]].forEach(([f, a]) => {
     const o = ctx.createOscillator(), g = ctx.createGain();
     o.type = "sine"; o.frequency.value = f;
     g.gain.setValueAtTime(0.0001, t);
@@ -1053,19 +1053,24 @@ function bucle() {
 }
 setInterval(bucle, 50);
 
+/* Avisa al llegar a cada punto cardinal (a menos de 10°), con margen para no repetir */
+const CARDINALES = [{ g: 0, n: "Norte" }, { g: 90, n: "Oriente" }, { g: 180, n: "Sur" }, { g: 270, n: "Occidente" }];
+let cardinalActual = null;   // índice del punto donde está, o null
 function revisarNorte() {
-  const lejos = distanciaAngular(estado.rumbo, 0);
-  if (!estado.enNorte && lejos < 10) {
-    estado.enNorte = true;
-    const ahora = performance.now();
-    if (ahora - ultimoAnuncioNorte > 1500) {
-      ultimoAnuncioNorte = ahora;
-      campanita();
-      vibrar(80);
-      anunciar("Norte", { urgente: true });
+  const cerca = CARDINALES.findIndex((c) => distanciaAngular(estado.rumbo, c.g) < 10);
+  // Si acaba de avisar otro punto, espera un momento y lo intenta en la siguiente vuelta del bucle
+  if (cerca !== -1 && cerca !== cardinalActual && performance.now() - ultimoAnuncioNorte > 1000) {
+    cardinalActual = cerca;
+    estado.enNorte = cerca === 0;
+    {
+      ultimoAnuncioNorte = performance.now();
+      campanita(cerca === 0 ? 1 : 0.75);   // el norte suena más agudo
+      vibrar(cerca === 0 ? [80, 60, 80] : 80);
+      anunciar(CARDINALES[cerca].n, { urgente: true });
     }
-  } else if (estado.enNorte && lejos > 15) {
-    estado.enNorte = false;   // margen para que no repita sin parar
+  } else if (cardinalActual !== null && distanciaAngular(estado.rumbo, CARDINALES[cardinalActual].g) > 15) {
+    cardinalActual = null;   // salió del punto: puede volver a avisar
+    estado.enNorte = false;
   }
 }
 
@@ -1166,7 +1171,7 @@ async function calibrar() {
    9. PANTALLAS Y BOTONES
    ========================================================= */
 const INSTRUCCIONES = {
-  brujula: "Modo brújula. Sostén el celular de pie, frente a ti, y gira despacio. El tono sube cuando te acercas al norte. En el norte suena una campanita.",
+  brujula: "Modo brújula. Sostén el celular de pie, frente a ti, y gira despacio. El tono sube cuando te acercas al norte. Al llegar al norte, al oriente, al sur o al occidente, te lo digo.",
   detector: "Modo detector de imanes. Pon el celular quieto sobre la mesa y toca Calibrar. Luego acerca el imán despacio, por un lado del celular.",
   experimentos: "Experimentos con imanes. Elige un experimento. Yo te guío paso a paso.",
   aprender: "Modo aprender. Toca una pregunta para escuchar la respuesta.",
@@ -1203,6 +1208,7 @@ async function irA(nombre) {
   clearTimeout(geigerTimer);
   estado.pantalla = nombre;
   estado.enNorte = false;
+  cardinalActual = null;
   $$("main > section").forEach((s) => { s.hidden = s.id !== "pantalla-" + nombre; });
   const h = $("#pantalla-" + nombre + " h2");
   h.focus();
