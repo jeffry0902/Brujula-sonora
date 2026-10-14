@@ -191,17 +191,6 @@
         <li>Muévelo en el aire dibujando un número ocho acostado, unas tres veces.</li>
         <li>Gira también la muñeca mientras lo mueves.</li>
       </ol>
-      <h3>Activar el sensor magnético en Android</h3>
-      <p>Sin esto, en Android el detector de imanes casi no reacciona. Se hace una sola vez. La primera vez, pide ayuda a alguien que vea la pantalla.</p>
-      <ol>
-        <li>Abre Chrome.</li>
-        <li>En la barra de direcciones escribe: chrome://flags</li>
-        <li>En el buscador de esa página escribe: Generic Sensor Extra Classes</li>
-        <li>Cambia la opción de Default a Enabled.</li>
-        <li>Toca el botón Relaunch para reiniciar Chrome.</li>
-        <li>Vuelve a abrir Brújula Sonora y toca Empezar.</li>
-      </ol>
-      <p>Si la opción no aparece, tu versión de Chrome ya no la tiene. Entonces el detector solo usa la brújula normal y reacciona poco.</p>
       <h3>Cuida tu celular</h3>
       <ul>
         <li>Un imán pequeño de clase no daña el celular. La memoria y la pantalla no se afectan.</li>
@@ -616,7 +605,7 @@ function textoDiagnostico() {
 }
 
 /* Sensor magnético directo (microteslas). En Android, Chrome lo trae apagado:
-   se activa con la opción "Generic Sensor Extra Classes" (ver Ayuda).
+   no lo trae disponible; si algún navegador lo ofrece, lo usamos solo.
    Es lo único que de verdad reacciona a un imán en Android, porque la
    brújula normal de Android está hecha para ignorar las perturbaciones. */
 function iniciarMagnetometro() {
@@ -935,7 +924,6 @@ function instruccionesDe(nombre) {
   let t = INSTRUCCIONES[nombre];
   if (nombre === "detector") {
     if (estado.magOK) t += " El sensor magnético está activo. Mido en microteslas.";
-    else if (!esIPhone()) t += " Aviso: el sensor magnético directo está apagado en Chrome, y así el detector casi no reacciona. En Ayuda y cuidados te explico cómo activarlo. Se hace una sola vez.";
     actualizarAvisoSensor();
   }
   return t;
@@ -945,9 +933,6 @@ function actualizarAvisoSensor() {
   const aviso = $("#aviso-sensor");
   if (estado.magOK) {
     aviso.textContent = "Sensor magnético activo: mido en microteslas.";
-    aviso.hidden = false;
-  } else if (!esIPhone()) {
-    aviso.textContent = "El sensor magnético directo está apagado en Chrome. Así el detector casi no reacciona. Mira en Ayuda y cuidados cómo activarlo.";
     aviso.hidden = false;
   } else {
     aviso.hidden = true;
