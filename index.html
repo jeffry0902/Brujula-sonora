@@ -532,8 +532,8 @@ function nuevaLectura(rumbo, beta, gamma) {
 const diag = { abs: 0, absNulos: 0, rel: 0, relNulos: 0, ios: 0, sensor: "sin probar", permiso: "?" };
 
 function alOrientarIOS(e) {
-  diag.ios++;
   if (typeof e.webkitCompassHeading === "number" && !isNaN(e.webkitCompassHeading)) {
+    diag.ios++;
     estado.fuente = "ios";
     nuevaLectura(normalizar(e.webkitCompassHeading), e.beta, e.gamma);
   }
@@ -655,21 +655,27 @@ function empezar() {
       anunciar("Tu navegador no deja usar la brújula. Prueba con Chrome en Android o con Safari en iPhone.", { urgente: true });
       return false;
     }
+    // Ojo: Chrome en Android también tiene requestPermission, así que no sirve
+    // para saber si es iPhone. Pedimos permiso si existe y escuchamos todas las fuentes.
     if (permisoIOS) {
       let respuesta = "denied";
       try { respuesta = await permisoIOS; } catch (e) { respuesta = "denied"; }
       if (respuesta !== "granted") {
-        anunciar("No diste permiso para usar los sensores. Así la brújula no funciona. Para arreglarlo, cierra Safari por completo, ábrelo otra vez y toca Empezar. Cuando te pregunte, elige Permitir.", { urgente: true });
+        const esIOS = /iPhone|iPad|iPod|Macintosh/.test(navigator.userAgent) && !/Android/.test(navigator.userAgent);
+        anunciar(esIOS
+          ? "No diste permiso para usar los sensores. Así la brújula no funciona. Para arreglarlo, cierra Safari por completo, ábrelo otra vez y toca Empezar. Cuando te pregunte, elige Permitir."
+          : "No diste permiso para usar los sensores. Así la brújula no funciona. Toca Empezar otra vez y elige Permitir. Si no te pregunta, en Chrome ve a Configuración de sitios, Sensores de movimiento, y elige Permitir.",
+          { urgente: true });
         return false;
       }
-      window.addEventListener("deviceorientation", alOrientarIOS);
-    } else {
-      if ("ondeviceorientationabsolute" in window) {
-        window.addEventListener("deviceorientationabsolute", alOrientarAbsoluta);
-      }
-      window.addEventListener("deviceorientation", alOrientarRelativa);
-      if (!sensorOrientacion) iniciarSensorOrientacion();
     }
+    // iPhone: usa webkitCompassHeading. Android: orientación absoluta.
+    window.addEventListener("deviceorientation", alOrientarIOS);
+    if ("ondeviceorientationabsolute" in window) {
+      window.addEventListener("deviceorientationabsolute", alOrientarAbsoluta);
+    }
+    window.addEventListener("deviceorientation", alOrientarRelativa);
+    if (!sensorOrientacion) iniciarSensorOrientacion();
     iniciarMagnetometro();
     pedirPantallaEncendida();
     revisarPermisoSensores();
